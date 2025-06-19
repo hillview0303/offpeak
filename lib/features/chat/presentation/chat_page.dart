@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../core/constants/color.dart';
 import '../../../core/constants/size.dart';
 import '../../../core/constants/style.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -269,11 +272,11 @@ class _ChatPageState extends State<ChatPage> {
 
     _messageController.clear();
 
-    // AI 응답 시뮬레이션
-    Future.delayed(const Duration(seconds: 1), () {
+    // AI 응답 받아오기
+    _fetchAIResponse(text).then((aiText) {
       setState(() {
         _messages.add(ChatMessage(
-          text: _getAIResponse(text),
+          text: aiText,
           isUser: false,
           timestamp: DateTime.now(),
         ));
@@ -281,14 +284,36 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
-  String _getAIResponse(String userMessage) {
-    final responses = [
-      '그것에 대해 더 자세히 알려드릴게요! 🏝️',
-      '좋은 질문이네요. 제가 도움을 드릴 수 있어요! ✈️',
-      '여행 관련해서 더 궁금한 것이 있으시면 언제든 물어보세요! 🗺️',
-      '맞춤형 추천을 원하시면 알고리즘 추천 기능을 이용해보세요! 🎯',
-    ];
-    return responses[DateTime.now().millisecond % responses.length];
+  // String _getAIResponse(String userMessage) {
+  //   final responses = [
+  //     '그것에 대해 더 자세히 알려드릴게요! 🏝️',
+  //     '좋은 질문이네요. 제가 도움을 드릴 수 있어요! ✈️',
+  //     '여행 관련해서 더 궁금한 것이 있으시면 언제든 물어보세요! 🗺️',
+  //     '맞춤형 추천을 원하시면 알고리즘 추천 기능을 이용해보세요! 🎯',
+  //   ];
+  //   return responses[DateTime.now().millisecond % responses.length];
+  // }
+
+  Future<String> _fetchAIResponse(String userMessage) async {
+    final url = Uri.parse('https://YOUR_LAAS_API_ENDPOINT'); // 예시 URL
+    final headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ${dotenv.env['LAAS_API_KEY']}',
+    };
+    final body = jsonEncode({'question': userMessage});
+
+    try {
+      final response = await http.post(url, headers: headers, body: body);
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        return json['answer'] ?? '답변을 불러올 수 없습니다.';
+      } else {
+        return '서버 오류: ${response.statusCode}';
+      }
+    } catch (e) {
+      return '에러 발생: $e';
+    }
   }
 
   String _formatTime(DateTime time) {
