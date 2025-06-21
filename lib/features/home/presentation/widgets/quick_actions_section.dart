@@ -8,48 +8,51 @@ class QuickActionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '빠른 액션',
-          style: AppTextStyles.h3,
-        ),
-        SizedBox(height: AppSizes.gapM),
-        Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionItem(
-                icon: Icons.search,
-                title: '여행지 검색',
-                onTap: () {
-                  // 검색 페이지로 이동
-                },
+    return Padding(
+      padding: const EdgeInsets.all(AppSizes.gapM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '빠른 액션',
+            style: AppTextStyles.label,
+          ),
+          SizedBox(height: AppSizes.gapM),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionItem(
+                  icon: Icons.search,
+                  title: '여행지 검색',
+                  onTap: () {
+                    // 검색 페이지로 이동
+                  },
+                ),
               ),
-            ),
-            SizedBox(width: AppSizes.gapM),
-            Expanded(
-              child: _buildQuickActionItem(
-                icon: Icons.bookmark_outline,
-                title: '찜한 장소',
-                onTap: () {
-                  // 찜한 장소 페이지로 이동
-                },
+              SizedBox(width: AppSizes.gapM),
+              Expanded(
+                child: _buildQuickActionItem(
+                  icon: Icons.bookmark_outline,
+                  title: '찜한 장소',
+                  onTap: () {
+                    // 찜한 장소 페이지로 이동
+                  },
+                ),
               ),
-            ),
-            SizedBox(width: AppSizes.gapM),
-            Expanded(
-              child: _buildQuickActionItem(
-                icon: Icons.location_on_outlined,
-                title: '내 주변',
-                onTap: () {
-                  // 내 주변 페이지로 이동
-                },
+              SizedBox(width: AppSizes.gapM),
+              Expanded(
+                child: _buildQuickActionItem(
+                  icon: Icons.location_on_outlined,
+                  title: '내 주변',
+                  onTap: () {
+                    // 내 주변 페이지로 이동
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 
