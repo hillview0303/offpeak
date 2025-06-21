@@ -26,17 +26,21 @@ class AiRecommendationSection extends StatelessWidget {
         child: Container(
           width: double.infinity,
           padding: EdgeInsets.all(AppSizes.gapL),
+          decoration: BoxDecoration(
+            gradient: AppColors.secondaryGradient,
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          ),
           child: Row(
             children: [
               Container(
                 padding: EdgeInsets.all(AppSizes.gapM),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.1),
+                  color: AppColors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 ),
                 child: Icon(
                   Icons.auto_awesome,
-                  color: AppColors.secondary,
+                  color: AppColors.white,
                   size: AppSizes.iconL,
                 ),
               ),
@@ -47,13 +51,15 @@ class AiRecommendationSection extends StatelessWidget {
                   children: [
                     Text(
                       'AI 맞춤 추천',
-                      style: AppTextStyles.h3,
+                      style: AppTextStyles.h3.copyWith(
+                        color: AppColors.white,
+                      ),
                     ),
                     SizedBox(height: AppSizes.gapXS),
                     Text(
                       '당신만을 위한 특별한 여행지를 찾아보세요',
                       style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.white.withOpacity(0.9),
                       ),
                     ),
                   ],
@@ -61,7 +67,7 @@ class AiRecommendationSection extends StatelessWidget {
               ),
               Icon(
                 Icons.arrow_forward_ios,
-                color: AppColors.textSecondary,
+                color: AppColors.white.withOpacity(0.8),
                 size: AppSizes.iconS,
               ),
             ],
