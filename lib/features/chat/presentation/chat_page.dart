@@ -1,30 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../../core/constants/color.dart';
 import '../../../core/constants/size.dart';
 import '../../../core/constants/style.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-class ChatPage extends StatefulWidget {
+// ChatMessage 모델
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  ChatMessage({required this.text, required this.isUser, required this.timestamp});
+}
+
+// Chat State Provider
+final chatMessagesProvider = StateProvider<List<ChatMessage>>((ref) => [
+  ChatMessage(
+    text: '안녕하세요! 여행 관련해서 궁금한 것이 있으시면 언제든 물어보세요! 😊',
+    isUser: false,
+    timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
+  ),
+]);
+
+final isLoadingProvider = StateProvider<bool>((ref) => false);
+
+class ChatPage extends HookConsumerWidget {
   const ChatPage({super.key});
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messageController = useTextEditingController();
+    final messages = ref.watch(chatMessagesProvider);
+    final isLoading = ref.watch(isLoadingProvider);
 
-class _ChatPageState extends State<ChatPage> {
-  final TextEditingController _messageController = TextEditingController();
-  final List<ChatMessage> _messages = [
-    ChatMessage(
-      text: '안녕하세요! 여행 관련해서 궁금한 것이 있으시면 언제든 물어보세요! 😊',
-      isUser: false,
-      timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-    ),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -43,16 +55,8 @@ class _ChatPageState extends State<ChatPage> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'AI 여행 도우미',
-                  style: AppTextStyles.labelBold,
-                ),
-                Text(
-                  '온라인',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.success,
-                  ),
-                ),
+                Text('AI 여행 도우미', style: AppTextStyles.labelBold),
+                Text('온라인', style: AppTextStyles.caption.copyWith(color: AppColors.success)),
               ],
             ),
           ],
@@ -61,31 +65,36 @@ class _ChatPageState extends State<ChatPage> {
         elevation: AppSizes.elevationS,
         actions: [
           IconButton(
-            onPressed: () {
-              // 채팅 설정
-            },
-            icon: Icon(
-              Icons.more_vert,
-              color: AppColors.textSecondary,
-            ),
+            onPressed: () {},
+            icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
           ),
         ],
       ),
       body: Column(
         children: [
-          // 채팅 메시지 리스트
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.all(AppSizes.gapM),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                return _buildMessageBubble(_messages[index]);
-              },
+              itemCount: messages.length,
+              itemBuilder: (context, index) => _buildMessageBubble(messages[index]),
             ),
           ),
-
-          // 메시지 입력 영역
-          _buildMessageInput(),
+          if (isLoading)
+            Container(
+              padding: EdgeInsets.all(AppSizes.gapS),
+              child: Row(
+                children: [
+                  SizedBox(width: AppSizes.gapL),
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                  SizedBox(width: AppSizes.gapS),
+                  Text('AI가 답변을 생성하고 있어요...',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+          _buildMessageInput(context, ref, messageController),
         ],
       ),
     );
@@ -95,40 +104,27 @@ class _ChatPageState extends State<ChatPage> {
     return Padding(
       padding: EdgeInsets.only(bottom: AppSizes.gapS),
       child: Row(
-        mainAxisAlignment:
-        message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             CircleAvatar(
               radius: AppSizes.avatarS / 2,
               backgroundColor: AppColors.primary,
-              child: Icon(
-                Icons.smart_toy,
-                color: AppColors.white,
-                size: AppSizes.iconS,
-              ),
+              child: Icon(Icons.smart_toy, color: AppColors.white, size: AppSizes.iconS),
             ),
             SizedBox(width: AppSizes.gapS),
           ],
-
           Flexible(
             child: Column(
-              crossAxisAlignment: message.isUser
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+              message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: AppSizes.gapM,
-                    vertical: AppSizes.gapS,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: AppSizes.gapM, vertical: AppSizes.gapS),
                   decoration: BoxDecoration(
-                    color: message.isUser
-                        ? AppColors.primary
-                        : AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusL)
-                        .copyWith(
+                    color: message.isUser ? AppColors.primary : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppSizes.radiusL).copyWith(
                       bottomLeft: message.isUser
                           ? Radius.circular(AppSizes.radiusL)
                           : Radius.circular(AppSizes.radiusS),
@@ -147,33 +143,22 @@ class _ChatPageState extends State<ChatPage> {
                   child: Text(
                     message.text,
                     style: AppTextStyles.bodyMedium.copyWith(
-                      color: message.isUser
-                          ? AppColors.white
-                          : AppColors.textPrimary,
+                      color: message.isUser ? AppColors.white : AppColors.textPrimary,
                     ),
                   ),
                 ),
                 SizedBox(height: AppSizes.gapXS),
-                Text(
-                  _formatTime(message.timestamp),
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textHint,
-                  ),
-                ),
+                Text(_formatTime(message.timestamp),
+                    style: AppTextStyles.caption.copyWith(color: AppColors.textHint)),
               ],
             ),
           ),
-
           if (message.isUser) ...[
             SizedBox(width: AppSizes.gapS),
             CircleAvatar(
               radius: AppSizes.avatarS / 2,
               backgroundColor: AppColors.secondary,
-              child: Icon(
-                Icons.person,
-                color: AppColors.white,
-                size: AppSizes.iconS,
-              ),
+              child: Icon(Icons.person, color: AppColors.white, size: AppSizes.iconS),
             ),
           ],
         ],
@@ -181,46 +166,33 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(BuildContext context, WidgetRef ref, TextEditingController messageController) {
+    final isLoading = ref.watch(isLoadingProvider);
+
     return Container(
       padding: EdgeInsets.all(AppSizes.gapM),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: AppSizes.elevationS,
-            offset: const Offset(0, -1),
-          ),
+          BoxShadow(color: AppColors.shadow, blurRadius: AppSizes.elevationS, offset: const Offset(0, -1)),
         ],
       ),
       child: SafeArea(
         child: Row(
           children: [
-            // 첨부 버튼
             IconButton(
-              onPressed: () {
-                // 파일 첨부
-              },
-              icon: Icon(
-                Icons.attach_file,
-                color: AppColors.textSecondary,
-              ),
+              onPressed: () {},
+              icon: Icon(Icons.attach_file, color: AppColors.textSecondary),
             ),
-
-            // 텍스트 입력 필드
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
                   color: AppColors.background,
                   borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                  border: Border.all(
-                    color: AppColors.border,
-                    width: 1,
-                  ),
+                  border: Border.all(color: AppColors.border, width: 1),
                 ),
                 child: TextField(
-                  controller: _messageController,
+                  controller: messageController,
                   decoration: InputDecoration(
                     hintText: '메시지를 입력하세요...',
                     hintStyle: AppTextStyles.hint,
@@ -233,24 +205,27 @@ class _ChatPageState extends State<ChatPage> {
                   style: AppTextStyles.bodyMedium,
                   maxLines: null,
                   textInputAction: TextInputAction.send,
-                  onSubmitted: (value) => _sendMessage(),
+                  onSubmitted: (value) => _sendMessage(ref, messageController),
+                  enabled: !isLoading,
                 ),
               ),
             ),
-
             SizedBox(width: AppSizes.gapS),
-
-            // 전송 버튼
             FloatingActionButton(
-              onPressed: _sendMessage,
+              onPressed: isLoading ? null : () => _sendMessage(ref, messageController),
               mini: true,
-              backgroundColor: AppColors.primary,
+              backgroundColor: isLoading ? AppColors.textSecondary : AppColors.primary,
               elevation: AppSizes.elevationS,
-              child: Icon(
-                Icons.send,
-                color: AppColors.white,
-                size: AppSizes.iconS,
-              ),
+              child: isLoading
+                  ? SizedBox(
+                width: AppSizes.iconS,
+                height: AppSizes.iconS,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                  strokeWidth: 2,
+                ),
+              )
+                  : Icon(Icons.send, color: AppColors.white, size: AppSizes.iconS),
             ),
           ],
         ),
@@ -258,94 +233,119 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  void _sendMessage() {
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+  void _sendMessage(WidgetRef ref, TextEditingController messageController) {
+    final text = messageController.text.trim();
+    if (text.isEmpty || ref.read(isLoadingProvider)) return;
 
-    setState(() {
-      _messages.add(ChatMessage(
-        text: text,
-        isUser: true,
-        timestamp: DateTime.now(),
-      ));
-    });
+    // 사용자 메시지 추가
+    final currentMessages = ref.read(chatMessagesProvider);
+    ref.read(chatMessagesProvider.notifier).state = [
+      ...currentMessages,
+      ChatMessage(text: text, isUser: true, timestamp: DateTime.now()),
+    ];
 
-    _messageController.clear();
+    ref.read(isLoadingProvider.notifier).state = true;
+    messageController.clear();
 
-    // AI 응답 받아오기
     _fetchAIResponse(text).then((aiText) {
-      setState(() {
-        _messages.add(ChatMessage(
-          text: aiText,
+      final updatedMessages = ref.read(chatMessagesProvider);
+      ref.read(chatMessagesProvider.notifier).state = [
+        ...updatedMessages,
+        ChatMessage(text: aiText, isUser: false, timestamp: DateTime.now()),
+      ];
+      ref.read(isLoadingProvider.notifier).state = false;
+    }).catchError((error) {
+      final errorMessages = ref.read(chatMessagesProvider);
+      ref.read(chatMessagesProvider.notifier).state = [
+        ...errorMessages,
+        ChatMessage(
+          text: '죄송합니다. 일시적인 오류가 발생했습니다. 다시 시도해주세요.',
           isUser: false,
           timestamp: DateTime.now(),
-        ));
-      });
+        ),
+      ];
+      ref.read(isLoadingProvider.notifier).state = false;
     });
   }
 
-  // String _getAIResponse(String userMessage) {
-  //   final responses = [
-  //     '그것에 대해 더 자세히 알려드릴게요! 🏝️',
-  //     '좋은 질문이네요. 제가 도움을 드릴 수 있어요! ✈️',
-  //     '여행 관련해서 더 궁금한 것이 있으시면 언제든 물어보세요! 🗺️',
-  //     '맞춤형 추천을 원하시면 알고리즘 추천 기능을 이용해보세요! 🎯',
-  //   ];
-  //   return responses[DateTime.now().millisecond % responses.length];
-  // }
-
   Future<String> _fetchAIResponse(String userMessage) async {
-    final url = Uri.parse('https://YOUR_LAAS_API_ENDPOINT'); // 예시 URL
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${dotenv.env['LAAS_API_KEY']}',
-    };
-    final body = jsonEncode({'question': userMessage});
-
     try {
-      final response = await http.post(url, headers: headers, body: body);
+      final projectCode = dotenv.env['LAAS_PROJECT_CODE'];
+      final apiKey = dotenv.env['LAAS_API_KEY'];
+      final hash = dotenv.env['LAAS_HASH'];
 
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        return json['answer'] ?? '답변을 불러올 수 없습니다.';
-      } else {
-        return '서버 오류: ${response.statusCode}';
+      if (projectCode == null || apiKey == null || hash == null) {
+        return '.env 파일 설정을 확인해주세요.';
       }
+
+      const String apiUrl = 'https://api-laas.wanted.co.kr/api/preset/v2/chat/completions';
+      final url = Uri.parse(apiUrl);
+
+      final headers = {
+        'project': projectCode,
+        'apiKey': apiKey,
+        'Content-Type': 'application/json; charset=utf-8',
+        'User-Agent': 'Flutter App',
+        'Accept': 'application/json',
+      };
+
+      final requestBody = {
+        'hash': hash,
+        'messages': [
+          {
+            'role': 'user',
+            'content': userMessage,
+          }
+        ]
+      };
+
+      final client = http.Client();
+
+      try {
+        final response = await client.post(
+          url,
+          headers: headers,
+          body: jsonEncode(requestBody),
+        ).timeout(const Duration(seconds: 30));
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+
+          if (data['choices'] != null && data['choices'].isNotEmpty) {
+            final choice = data['choices'][0];
+            if (choice['message'] != null && choice['message']['content'] != null) {
+              return choice['message']['content'];
+            }
+          }
+
+          return 'AI 응답을 찾을 수 없습니다.';
+
+        } else {
+          return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        }
+
+      } finally {
+        client.close();
+      }
+
     } catch (e) {
-      return '에러 발생: $e';
+      if (e.toString().toLowerCase().contains('timeout')) {
+        return 'API 응답 시간이 초과되었습니다. 다시 시도해주세요.';
+      } else if (e.toString().toLowerCase().contains('socket') ||
+          e.toString().toLowerCase().contains('network')) {
+        return '네트워크 연결을 확인해주세요.';
+      } else {
+        return '일시적인 오류가 발생했습니다. 다시 시도해주세요.';
+      }
     }
   }
 
   String _formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
-
-    if (difference.inMinutes < 1) {
-      return '방금';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}분 전';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}시간 전';
-    } else {
-      return '${time.month}/${time.day}';
-    }
+    if (difference.inMinutes < 1) return '방금';
+    if (difference.inHours < 1) return '${difference.inMinutes}분 전';
+    if (difference.inDays < 1) return '${difference.inHours}시간 전';
+    return '${time.month}/${time.day}';
   }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
-}
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.text,
-    required this.isUser,
-    required this.timestamp,
-  });
 }
