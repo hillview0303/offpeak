@@ -24,51 +24,61 @@ class AiRecommendationSection extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         child: Container(
+          height: 180,
           width: double.infinity,
-          padding: EdgeInsets.all(AppSizes.gapL),
           decoration: BoxDecoration(
-            gradient: AppColors.secondaryGradient,
+            gradient: AppColors.primaryGradient,
             borderRadius: BorderRadius.circular(AppSizes.radiusL),
           ),
-          child: Row(
+          child: Stack(
             children: [
-              Container(
-                padding: EdgeInsets.all(AppSizes.gapM),
-                decoration: BoxDecoration(
-                  color: AppColors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                ),
-                child: Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.white,
-                  size: AppSizes.iconL,
+              // 배경 이미지
+              Positioned(
+                right: -20,
+                bottom: -10,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                  child: Image.asset(
+                    'assets/images/tour.png',
+                    height: 140,
+                    width: 140,
+                    fit: BoxFit.cover,
+                    opacity: const AlwaysStoppedAnimation(0.8),
+                  ),
                 ),
               ),
-              SizedBox(width: AppSizes.gapM),
-              Expanded(
+
+              // 콘텐츠
+              Padding(
+                padding: EdgeInsets.all(AppSizes.gapL),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // 제목
                     Text(
                       'AI 맞춤 추천',
                       style: AppTextStyles.h3.copyWith(
                         color: AppColors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: AppSizes.gapXS),
-                    Text(
-                      '당신만을 위한 특별한 여행지를 찾아보세요',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.white.withOpacity(0.9),
+
+                    SizedBox(height: AppSizes.gapS),
+
+                    // 설명
+                    SizedBox(
+                      width: 180,
+                      child: Text(
+                        '당신만을 위한 특별한\n여행지를 찾아보세요',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.white.withOpacity(0.95),
+                          height: 1.4,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.white.withOpacity(0.8),
-                size: AppSizes.iconS,
               ),
             ],
           ),

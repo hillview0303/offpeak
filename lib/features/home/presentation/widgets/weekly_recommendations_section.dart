@@ -8,48 +8,42 @@ class WeeklyRecommendationsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '요일별 조용한 여행지',
-              style: AppTextStyles.h3,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.gapM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '오늘의 추천 여행지',
+            style: AppTextStyles.h3.copyWith(
+                fontSize: 15
             ),
-            TextButton(
-              onPressed: () {
-                // 전체 요일별 추천 보기
-              },
-              child: Text(
-                '전체보기',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
+          ),
+          SizedBox(height: AppSizes.gapM),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(7, (index) {
+                return Container(
+                  margin: EdgeInsets.only(
+                    right: index < 6 ? AppSizes.gapM : 0,
+                    bottom: 12, // 그림자를 위한 하단 여백
+                  ),
+                  child: _buildWeeklyRecommendationItem(
+                    day: _getDayName(index),
+                    title: _getLocationTitle(index),
+                    subtitle: _getLocationSubtitle(index),
+                    icon: _getLocationIcon(index),
+                    onTap: () {
+                      // 여행지 상세 페이지로 이동
+                    },
+                  ),
+                );
+              }),
             ),
-          ],
-        ),
-        SizedBox(height: AppSizes.gapM),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 4,
-          separatorBuilder: (context, index) => SizedBox(height: AppSizes.gapS),
-          itemBuilder: (context, index) {
-            return _buildWeeklyRecommendationItem(
-              day: _getDayName(index),
-              title: _getLocationTitle(index),
-              subtitle: _getLocationSubtitle(index),
-              imageUrl: _getLocationImage(index),
-              onTap: () {
-                // 여행지 상세 페이지로 이동
-              },
-            );
-          },
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -57,91 +51,93 @@ class WeeklyRecommendationsSection extends StatelessWidget {
     required String day,
     required String title,
     required String subtitle,
-    required String imageUrl,
+    required IconData icon,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: AppSizes.elevationS,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        child: Padding(
-          padding: EdgeInsets.all(AppSizes.gapM),
-          child: Row(
-            children: [
-              // 요일 표시
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                ),
-                child: Center(
-                  child: Text(
-                    day,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+    return SizedBox(
+      width: 280,
+      child: Card(
+        elevation: AppSizes.elevationM,
+        margin: EdgeInsets.zero,
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          child: Padding(
+            padding: EdgeInsets.all(AppSizes.gapL),
+            child: Row(
+              children: [
+                // 요일 표시
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
                   ),
-                ),
-              ),
-              SizedBox(width: AppSizes.gapM),
-
-              // 여행지 정보
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: AppSizes.gapXS),
-                    Text(
-                      subtitle,
+                  child: Center(
+                    child: Text(
+                      day,
                       style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
+                        color: AppColors.secondary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-              ),
-
-              // 이미지 플레이스홀더
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  border: Border.all(
-                    color: AppColors.textSecondary.withOpacity(0.2),
                   ),
                 ),
-                child: Icon(
-                  Icons.image,
-                  color: AppColors.textSecondary.withOpacity(0.5),
-                  size: AppSizes.iconM,
-                ),
-              ),
+                SizedBox(width: AppSizes.gapM),
 
-              SizedBox(width: AppSizes.gapS),
-              Icon(
-                Icons.arrow_forward_ios,
-                color: AppColors.textSecondary,
-                size: AppSizes.iconS,
-              ),
-            ],
+                // 여행지 정보
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: AppSizes.gapXS),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                          fontSize: 10,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(width: AppSizes.gapS),
+
+                // 카테고리 아이콘
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: AppColors.secondary,
+                    size: 24,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -159,6 +155,9 @@ class WeeklyRecommendationsSection extends StatelessWidget {
       '제주 만장굴',
       '강릉 오죽헌',
       '안동 하회마을',
+      '부산 해동용궁사',
+      '전주 한옥마을',
+      '담양 죽녹원',
     ];
     return titles[index % titles.length];
   }
@@ -169,12 +168,72 @@ class WeeklyRecommendationsSection extends StatelessWidget {
       '신비로운 용암동굴 탐험으로 특별한 경험을',
       '율곡 이이의 생가에서 역사와 문화를 느껴보세요',
       '전통 한옥마을에서 조용한 시간을 보내세요',
+      '바다와 어우러진 아름다운 사찰을 만나보세요',
+      '전통 한옥의 아름다움을 느낄 수 있는 곳',
+      '푸른 대나무 숲길에서 힐링하는 시간을',
     ];
     return subtitles[index % subtitles.length];
   }
 
-  String _getLocationImage(int index) {
-    // 실제 구현에서는 이미지 URL을 반환
-    return 'placeholder_image_$index.jpg';
+  // 카테고리별 아이콘 매핑 (AI 데이터 연동 시 사용)
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case '사찰':
+      case 'temple':
+        return Icons.temple_buddhist;
+      case '자연':
+      case '동굴':
+      case 'nature':
+      case 'cave':
+        return Icons.landscape;
+      case '역사':
+      case '문화재':
+      case 'historical':
+      case 'heritage':
+        return Icons.account_balance;
+      case '전통마을':
+      case '한옥':
+      case 'traditional':
+      case 'hanok':
+        return Icons.home_work_outlined;
+      case '공원':
+      case '숲':
+      case 'park':
+      case 'forest':
+        return Icons.park_outlined;
+      case '박물관':
+      case 'museum':
+        return Icons.museum;
+      case '궁궐':
+      case 'palace':
+        return Icons.castle;
+      case '해변':
+      case '바다':
+      case 'beach':
+      case 'sea':
+        return Icons.beach_access;
+      case '산':
+      case 'mountain':
+        return Icons.terrain;
+      case '쇼핑':
+      case 'shopping':
+        return Icons.shopping_bag_outlined;
+      default:
+        return Icons.place;
+    }
+  }
+
+  IconData _getLocationIcon(int index) {
+    // 현재는 하드코딩, 추후 AI 데이터에서 category 필드를 받아서 _getCategoryIcon(category) 사용
+    final categories = [
+      '사찰',      // 불국사
+      '자연',      // 만장굴
+      '역사',      // 오죽헌
+      '전통마을',   // 하회마을
+      '사찰',      // 해동용궁사
+      '한옥',      // 한옥마을
+      '공원',      // 죽녹원
+    ];
+    return _getCategoryIcon(categories[index % categories.length]);
   }
 }

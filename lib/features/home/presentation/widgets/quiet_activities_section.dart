@@ -8,102 +8,135 @@ class QuietActivitiesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              '조용한 액티비티 추천',
-              style: AppTextStyles.h3,
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.gapM),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '조용히 즐기는 여행',
+            style: AppTextStyles.h3.copyWith(
+              fontSize: 15
             ),
-            TextButton(
-              onPressed: () {
-                // 전체 액티비티 보기
-              },
-              child: Text(
-                '전체보기',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: AppSizes.gapM),
-        SizedBox(
-          height: 180,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            separatorBuilder: (context, index) => SizedBox(width: AppSizes.gapM),
-            itemBuilder: (context, index) {
-              return _buildActivityCard(
-                title: _getActivityTitle(index),
-                subtitle: _getActivitySubtitle(index),
-                icon: _getActivityIcon(index),
-                onTap: () {
-                  // 액티비티 상세 페이지로 이동
-                },
-              );
-            },
           ),
-        ),
-      ],
+          SizedBox(height: AppSizes.gapM),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(5, (index) {
+                return Container(
+                  margin: EdgeInsets.only(
+                    right: index < 4 ? AppSizes.gapM : 0,
+                    bottom: 16, // 그림자를 위한 하단 여백
+                  ),
+                  child: _buildActivityCard(
+                    index: index,
+                    title: _getActivityTitle(index),
+                    subtitle: _getActivitySubtitle(index),
+                    imagePath: _getActivityImage(index),
+                    gradient: _getActivityGradient(index),
+                    onTap: () {
+                      // 액티비티 상세 페이지로 이동
+                    },
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildActivityCard({
+    required int index,
     required String title,
     required String subtitle,
-    required IconData icon,
+    required String imagePath,
+    required LinearGradient gradient,
     required VoidCallback onTap,
   }) {
     return SizedBox(
-      width: 160,
+      width: 180,
+      height: 200, // 최소 높이 지정
       child: Card(
-        elevation: AppSizes.elevationS,
+        elevation: AppSizes.elevationM,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
         ),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          child: Padding(
-            padding: EdgeInsets.all(AppSizes.gapM),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+            ),
+            child: Stack(
               children: [
-                Container(
-                  padding: EdgeInsets.all(AppSizes.gapS),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.secondary,
-                    size: AppSizes.iconM,
+                // 배경 이미지
+                Positioned(
+                  right: -10,
+                  top: 20,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                    child: Image.asset(
+                      imagePath,
+                      height: 100,
+                      width: 100,
+                      fit: BoxFit.cover,
+                      opacity: const AlwaysStoppedAnimation(0.7),
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 100,
+                          width: 100,
+                          decoration: BoxDecoration(
+                            color: AppColors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                          ),
+                          child: Icon(
+                            _getActivityIcon(index),
+                            size: AppSizes.iconL,
+                            color: AppColors.white.withOpacity(0.8),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
-                SizedBox(height: AppSizes.gapM),
-                Text(
-                  title,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w600,
+
+                // 콘텐츠
+                Padding(
+                  padding: EdgeInsets.all(AppSizes.gapL),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      // 카테고리
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.white.withOpacity(0.9),
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      SizedBox(height: AppSizes.gapXS),
+
+                      // 제목
+                      Text(
+                        title,
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: AppSizes.gapXS),
-                Text(
-                  subtitle,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -126,13 +159,60 @@ class QuietActivitiesSection extends StatelessWidget {
 
   String _getActivitySubtitle(int index) {
     final subtitles = [
-      '조용히 책을 읽을 수 있는 공간',
-      '예술 작품을 감상하며 힐링',
-      '혼자만의 시간을 보내기 좋은 곳',
-      '자연 속에서 여유로운 산책',
-      '마음의 평화를 찾을 수 있는 곳',
+      'Indoor',
+      'Indoor',
+      'Indoor',
+      'Outdoor',
+      'Indoor',
     ];
     return subtitles[index % subtitles.length];
+  }
+
+  String _getActivityImage(int index) {
+    final images = [
+      'assets/images/library.png',
+      'assets/images/museum.png',
+      'assets/images/cafe.png',
+      'assets/images/walking.png',
+      'assets/images/meditation.png',
+    ];
+    return images[index % images.length];
+  }
+
+  LinearGradient _getActivityGradient(int index) {
+    final gradients = [
+      // 차분한 올리브 그린
+      LinearGradient(
+        colors: [Color(0xFF8FA68E), Color(0xFFA4BAA2)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      // 부드러운 베이지
+      LinearGradient(
+        colors: [Color(0xFFB8A082), Color(0xFFC8B299)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      // 차분한 라벤더 그레이
+      LinearGradient(
+        colors: [Color(0xFF9B96A6), Color(0xFFAFA9B8)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      // 따뜻한 더스티 로즈
+      LinearGradient(
+        colors: [Color(0xFFA08A8A), Color(0xFFB39C9C)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      // 은은한 세이지 그린
+      LinearGradient(
+        colors: [Color(0xFF8B9A8B), Color(0xFF9FAD9F)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+    ];
+    return gradients[index % gradients.length];
   }
 
   IconData _getActivityIcon(int index) {
