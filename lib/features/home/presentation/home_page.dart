@@ -33,12 +33,12 @@ class HomePage extends StatelessWidget {
               // 빠른 액션 섹션
               const QuickActionsSection(),
 
-              const SizedBox(height: AppSizes.gapL),
+              const SizedBox(height: AppSizes.gapS),
 
               // 조용한 액티비티 추천 섹션
               const QuietActivitiesSection(),
 
-              const SizedBox(height: AppSizes.gapL),
+              const SizedBox(height: AppSizes.gapS),
 
               // 요일별 조용한 여행지 추천 섹션
               const WeeklyRecommendationsSection(),
