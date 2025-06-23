@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/color.dart';
 import '../../../../core/constants/size.dart';
 import '../../../../core/constants/style.dart';
@@ -9,10 +10,10 @@ class QuickActionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Map<String, dynamic>> quickActions = [
-      {'icon': Icons.search, 'label': '여행지 검색', 'route': '/search'},
-      {'icon': Icons.location_on_outlined, 'label': '내 주변', 'route': '/nearby'},
-      {'icon': Icons.bookmark_outline, 'label': '찜한 장소', 'route': '/bookmarks'},
-      {'icon': Icons.history, 'label': '최근 활동', 'route': '/recent'},
+      {'icon': Icons.search, 'label': '여행지 검색', 'route': '/home/search'},
+      {'icon': Icons.location_on_outlined, 'label': '내 주변', 'route': '/home/nearby'},
+      {'icon': Icons.bookmark_outline, 'label': '찜한 장소', 'route': '/home/favorites'},
+      {'icon': Icons.history, 'label': '최근 활동', 'route': '/home/recent'},
     ];
 
     return Padding(
@@ -23,7 +24,7 @@ class QuickActionsSection extends StatelessWidget {
           Text(
             '바로 가기',
             style: AppTextStyles.h3.copyWith(
-              fontSize: 15
+                fontSize: 15
             ),
           ),
           Row(
@@ -31,12 +32,10 @@ class QuickActionsSection extends StatelessWidget {
             children: quickActions.map((action) {
               return Expanded(
                 child: _buildQuickActionItem(
+                  context: context,
                   icon: action['icon'],
                   label: action['label'],
-                  onTap: () {
-                    // 해당 페이지로 이동
-                    print('Navigate to: ${action['route']}');
-                  },
+                  route: action['route'],
                 ),
               );
             }).toList(),
@@ -47,12 +46,13 @@ class QuickActionsSection extends StatelessWidget {
   }
 
   Widget _buildQuickActionItem({
+    required BuildContext context,
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required String route,
   }) {
     return InkWell(
-      onTap: onTap,
+      onTap: () => context.push(route),
       borderRadius: BorderRadius.circular(AppSizes.radiusL),
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,

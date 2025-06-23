@@ -16,7 +16,7 @@ class QuietActivitiesSection extends StatelessWidget {
           Text(
             '조용히 즐기는 여행',
             style: AppTextStyles.h3.copyWith(
-              fontSize: 15
+                fontSize: 15
             ),
           ),
           SizedBox(height: AppSizes.gapM),
@@ -33,7 +33,6 @@ class QuietActivitiesSection extends StatelessWidget {
                     index: index,
                     title: _getActivityTitle(index),
                     subtitle: _getActivitySubtitle(index),
-                    imagePath: _getActivityImage(index),
                     gradient: _getActivityGradient(index),
                     onTap: () {
                       // 액티비티 상세 페이지로 이동
@@ -52,13 +51,12 @@ class QuietActivitiesSection extends StatelessWidget {
     required int index,
     required String title,
     required String subtitle,
-    required String imagePath,
     required LinearGradient gradient,
     required VoidCallback onTap,
   }) {
     return SizedBox(
       width: 180,
-      height: 200, // 최소 높이 지정
+      height: 200,
       child: Card(
         elevation: AppSizes.elevationM,
         shape: RoundedRectangleBorder(
@@ -74,33 +72,21 @@ class QuietActivitiesSection extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                // 배경 이미지
+                // 기존 이미지 자리에 아이콘
                 Positioned(
                   right: -10,
                   top: 20,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
-                    child: Image.asset(
-                      imagePath,
-                      height: 100,
-                      width: 100,
-                      fit: BoxFit.cover,
-                      opacity: const AlwaysStoppedAnimation(0.7),
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 100,
-                          width: 100,
-                          decoration: BoxDecoration(
-                            color: AppColors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                          ),
-                          child: Icon(
-                            _getActivityIcon(index),
-                            size: AppSizes.iconL,
-                            color: AppColors.white.withOpacity(0.8),
-                          ),
-                        );
-                      },
+                  child: Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: AppColors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                    ),
+                    child: Icon(
+                      _getActivityIcon(index),
+                      size: 50, // 큰 아이콘 크기
+                      color: AppColors.white.withOpacity(0.7),
                     ),
                   ),
                 ),
@@ -166,17 +152,6 @@ class QuietActivitiesSection extends StatelessWidget {
       'Indoor',
     ];
     return subtitles[index % subtitles.length];
-  }
-
-  String _getActivityImage(int index) {
-    final images = [
-      'assets/images/library.png',
-      'assets/images/museum.png',
-      'assets/images/cafe.png',
-      'assets/images/walking.png',
-      'assets/images/meditation.png',
-    ];
-    return images[index % images.length];
   }
 
   LinearGradient _getActivityGradient(int index) {
