@@ -39,14 +39,6 @@ class HomeHeader extends StatelessWidget {
                   size: AppSizes.iconL,
                 ),
               ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.person_outline,
-                  color: AppColors.textSecondary,
-                  size: AppSizes.iconL,
-                ),
-              ),
             ],
           ),
         ],

@@ -23,6 +23,7 @@ class Assets {
   static const String imagesHome = 'assets/images/home.svg';
   static const String imagesMy = 'assets/images/my.svg';
   static const String imagesOffpeak = 'assets/images/offpeak.png';
+  static const String imagesTodaytravel = 'assets/images/todaytravel.png';
   static const String imagesTour = 'assets/images/tour.png';
   static const String imagesWater = 'assets/images/water.png';
   static const String offpeak = '.env';

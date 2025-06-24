@@ -16,34 +16,76 @@ class NavigationService {
   static DateTime? _lastBackPressed;
   static const Duration _backPressThreshold = Duration(seconds: 2);
 
-  // 기본 네비게이션 메소드들
+  // 기본 네비게이션 메소드들 (GoRouter 래핑)
+
   /// 경로로 이동 (기존 히스토리 유지)
-  void navigateTo(String path) {
-    _router.push(path);
+  /// context.push('/path') 대체
+  void navigateTo(String path, {Object? extra}) {
+    _router.push(path, extra: extra);
   }
 
   /// 현재 스택을 모두 제거하고 새 경로로 이동
-  void pushAndRemoveUntil(String path) {
-    _router.go(path);
+  /// context.go('/path') 대체
+  void pushAndRemoveUntil(String path, {Object? extra}) {
+    _router.go(path, extra: extra);
+  }
+
+  /// 이름이 있는 라우트로 이동
+  /// context.pushNamed('routeName') 대체
+  void navigateToNamed(String name, {Map<String, String> pathParameters = const {}, Object? extra}) {
+    _router.pushNamed(name, pathParameters: pathParameters, extra: extra);
+  }
+
+  /// 현재 페이지를 새 경로로 교체
+  /// context.pushReplacement('/path') 대체
+  void replaceTo(String path, {Object? extra}) {
+    _router.pushReplacement(path, extra: extra);
+  }
+
+  /// 이름이 있는 라우트로 교체
+  /// context.pushReplacementNamed('routeName') 대체
+  void replaceToNamed(String name, {Map<String, String> pathParameters = const {}, Object? extra}) {
+    _router.pushReplacementNamed(name, pathParameters: pathParameters, extra: extra);
   }
 
   /// 뒤로가기
-  void goBack() {
+  /// context.pop() 대체
+  void goBack([Object? result]) {
     if (_router.canPop()) {
+      _router.pop(result);
+    }
+  }
+
+  /// 특정 경로까지 뒤로가기
+  /// context.popUntil() 대체
+  void popUntil(String path) {
+    while (_router.canPop() && _router.routerDelegate.currentConfiguration.uri.path != path) {
       _router.pop();
     }
   }
 
-  /// 현재 페이지를 새 경로로 교체
-  void replaceTo(String path) {
-    _router.pushReplacement(path);
+  // 추가 유틸리티 메소드들
+
+  /// 현재 위치가 특정 경로인지 확인
+  bool isCurrentRoute(String path) {
+    return currentLocation == path;
   }
 
-  // 편의 메소드들 (특정 페이지로 바로 이동)
-  void goHome() => pushAndRemoveUntil(RoutePaths.home);
-  void goChat() => pushAndRemoveUntil(RoutePaths.chat);
-  void goActivity() => pushAndRemoveUntil(RoutePaths.my);
-  void goAlgorithmRecommendation() => navigateTo(RoutePaths.algorithmRecommendation);
+  /// 뒤로갈 수 있는지 확인
+  bool canPop() => _router.canPop();
+
+  /// 현재 위치 반환
+  String get currentLocation {
+    final routerDelegate = _router.routerDelegate;
+    final routeInformation = routerDelegate.currentConfiguration;
+    return routeInformation.uri.toString();
+  }
+
+  /// 특정 라우트가 스택에 있는지 확인
+  bool hasRoute(String path) {
+    // GoRouter의 스택을 확인하는 로직 구현 필요
+    return currentLocation.contains(path);
+  }
 
   // 백버튼 처리 메소드
   Future<bool> handleBackPress(BuildContext context) async {
@@ -75,15 +117,29 @@ class NavigationService {
     return true;
   }
 
-  bool canPop() => _router.canPop();
-
-  String get currentLocation {
-    final routerDelegate = _router.routerDelegate;
-    final routeInformation = routerDelegate.currentConfiguration;
-    return routeInformation.uri.toString();
-  }
-
-  void clearAndNavigateTo(String path) {
-    pushAndRemoveUntil(path);
-  }
+  // 편의 메소드들 (선택사항 - 자주 사용하는 경로들)
+  void goHome() => pushAndRemoveUntil(RoutePaths.home);
+  void goChat() => pushAndRemoveUntil(RoutePaths.chat);
+  void goMy() => pushAndRemoveUntil(RoutePaths.my);
 }
+
+/*
+라우터 사용법:
+
+기존 GoRouter 방식 → NavigationService 방식
+- context.push('/path') → NavigationService.instance.navigateTo('/path')
+- context.go('/path') → NavigationService.instance.pushAndRemoveUntil('/path')
+- context.pushNamed('routeName') → NavigationService.instance.navigateToNamed('routeName')
+- context.pop() → NavigationService.instance.goBack()
+- context.pushReplacement('/path') → NavigationService.instance.replaceTo('/path')
+- context.pushReplacementNamed('routeName') → NavigationService.instance.replaceToNamed('routeName')
+
+예시:
+NavigationService.instance.navigateTo('/home/search');
+NavigationService.instance.navigateToNamed('quiet-activities-detail',
+  pathParameters: {'categoryType': 'library'},
+  extra: {'data': someData}
+);
+NavigationService.instance.pushAndRemoveUntil('/home');
+NavigationService.instance.goBack();
+*/

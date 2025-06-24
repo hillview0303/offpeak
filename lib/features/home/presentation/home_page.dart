@@ -5,7 +5,7 @@ import 'widgets/home_header.dart';
 import 'widgets/ai_recommendation_section.dart';
 import 'widgets/quick_actions_section.dart';
 import 'widgets/quiet_activities_section.dart';
-import 'widgets/weekly_recommendations_section.dart';
+import 'widgets/transportation_recommendations_section.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -40,8 +40,8 @@ class HomePage extends StatelessWidget {
 
               const SizedBox(height: AppSizes.gapS),
 
-              // 요일별 조용한 여행지 추천 섹션
-              const WeeklyRecommendationsSection(),
+              // 교통 수단별 추천 섹션
+              const TransportationRecommendationsSection(),
 
               const SizedBox(height: AppSizes.gapL),
             ],

@@ -45,10 +45,10 @@ class MainPage extends StatelessWidget {
           ),
           child: SafeArea(
             child: Container(
-              height: 80,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              height: 65, // 80 → 65로 줄임
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 6), // 패딩도 살짝 줄임
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // 홈 버튼
                   _buildNavItem(
@@ -58,9 +58,6 @@ class MainPage extends StatelessWidget {
                     isSelected: navigationShell.currentIndex == 0,
                     onTap: () => _onTap(0),
                   ),
-
-                  // 챗 버튼 자리 (빈 공간)
-                  const SizedBox(width: 56),
 
                   // 마이 버튼
                   _buildNavItem(
@@ -78,7 +75,7 @@ class MainPage extends StatelessWidget {
 
         // 챗 버튼 (상단에 걸치게)
         Positioned(
-          top: -28, // 네비게이션 바 위로 올라가게
+          top: -15, // -35 → -30으로 조정 (높이가 줄어든 만큼)
           left: 0,
           right: 0,
           child: Center(
@@ -99,7 +96,8 @@ class MainPage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        width: 45, // 50 → 45로 줄임
+        padding: const EdgeInsets.symmetric(vertical: 4), // 8 → 4로 줄임
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -107,17 +105,20 @@ class MainPage extends StatelessWidget {
             _buildSvgIcon(
               iconPath: iconPath,
               fallbackIcon: fallbackIcon,
-              size: 24,
+              size: 20, // 24 → 20으로 줄임
               color: isSelected ? AppColors.primary : AppColors.textSecondary,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 1), // 2 → 1로 줄임
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 10, // 11 → 10으로 줄임
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -130,63 +131,34 @@ class MainPage extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => _onTap(1),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isSelected ? AppColors.secondary : AppColors.secondary,
-              border: Border.all(
-                color: AppColors.surface,
-                width: 4,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.secondary.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: _buildSvgIcon(
-              iconPath: 'assets/images/chat.svg',
-              fallbackIcon: Icons.chat_bubble,
-              size: 32,
-              color: Colors.white,
-            ),
+      child: Container(
+        width: 70,
+        height: 70,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected ? AppColors.secondary : AppColors.secondary,
+          border: Border.all(
+            color: AppColors.surface,
+            width: 5,
           ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadowLight,
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.secondary.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
             ),
-            child: Text(
-              '챗',
-              style: TextStyle(
-                fontSize: 12,
-                color: isSelected ? AppColors.secondary : AppColors.secondaryDark,
-                fontWeight: FontWeight.w600,
-              ),
+            BoxShadow(
+              color: AppColors.shadow,
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Icon(
+          Icons.chat_outlined,
+          size: 24,
+          color: Colors.white,
+        ),
       ),
     );
   }

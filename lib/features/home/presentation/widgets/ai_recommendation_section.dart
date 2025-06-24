@@ -20,7 +20,7 @@ class AiRecommendationSection extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          NavigationService.instance.goAlgorithmRecommendation();
+          NavigationService.instance.navigateTo('/home/algorithm-recommendation');
         },
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         child: Container(
