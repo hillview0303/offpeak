@@ -40,6 +40,9 @@ dependencies:
   flutter_hooks: ^0.21.2
   hooks_riverpod: ^2.6.1
   riverpod: ^2.6.1
+  geolocator: ^14.0.1
+  geocoding: ^4.0.0
+  flutter_svg: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -55,7 +58,7 @@ dev_dependencies:
   flutter_native_splash: ^2.4.6
 
 # For information on the generic Dart part of this file, see the
-# following page: https://dart.dev/tools/pub/pubspec
+# following pages: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
