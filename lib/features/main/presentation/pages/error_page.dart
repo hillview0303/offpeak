@@ -5,9 +5,7 @@ import '../../../../core/constants/style.dart';
 import '../../../../core/router/navigation_service.dart';
 
 class ErrorPage extends StatelessWidget {
-  final String error;
-
-  const ErrorPage({super.key, required this.error});
+  const ErrorPage({super.key}); // 기본 생성자만 유지
 
   @override
   Widget build(BuildContext context) {
@@ -65,27 +63,6 @@ class ErrorPage extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: AppSizes.gapS),
-
-              // 에러 상세 정보 (디버그용)
-              if (error.isNotEmpty)
-                Container(
-                  margin: EdgeInsets.symmetric(vertical: AppSizes.gapM),
-                  padding: EdgeInsets.all(AppSizes.gapM),
-                  decoration: BoxDecoration(
-                    color: AppColors.greyLight.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                  ),
-                  child: Text(
-                    error,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.textSecondary,
-                      fontFamily: 'monospace',
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
               SizedBox(height: AppSizes.gapXL),
 
               // 홈으로 돌아가기 버튼
@@ -109,40 +86,6 @@ class ErrorPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppSizes.radiusM),
                     ),
                     elevation: AppSizes.elevationS,
-                  ),
-                ),
-              ),
-              SizedBox(height: AppSizes.gapM),
-
-              // 다시 시도 버튼
-              SizedBox(
-                width: double.infinity,
-                height: AppSizes.buttonHeight,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // 페이지 새로고침 또는 뒤로가기
-                    if (NavigationService.instance.canPop()) {
-                      NavigationService.instance.goBack();
-                    } else {
-                      NavigationService.instance.goHome();
-                    }
-                  },
-                  icon: Icon(
-                    Icons.refresh,
-                    color: AppColors.primary,
-                    size: AppSizes.iconM,
-                  ),
-                  label: Text(
-                    '다시 시도',
-                    style: AppTextStyles.buttonMedium.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusM),
-                    ),
                   ),
                 ),
               ),

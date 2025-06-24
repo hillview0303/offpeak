@@ -5,7 +5,7 @@ import '../../../../../core/constants/style.dart';
 
 void showCommonBottomSheet({
   required BuildContext context,
-  required String title,
+  String? title, // nullable로 변경
   required Widget content,
   double minHeightFactor = 0.4,
   double maxHeightFactor = 0.9,
@@ -26,7 +26,7 @@ void showCommonBottomSheet({
 }
 
 class CommonBottomSheet extends StatelessWidget {
-  final String title;
+  final String? title; // nullable로 변경
   final Widget content;
   final double minHeightFactor;
   final double maxHeightFactor;
@@ -34,7 +34,7 @@ class CommonBottomSheet extends StatelessWidget {
 
   const CommonBottomSheet({
     super.key,
-    required this.title,
+    this.title, // required 제거
     required this.content,
     this.minHeightFactor = 0.4,
     this.maxHeightFactor = 0.9,
@@ -75,19 +75,21 @@ class CommonBottomSheet extends StatelessWidget {
                 ),
               ),
 
-              // 헤더
+              // 헤더 (title이 있으면 제목 표시, 없으면 여백만)
               Padding(
                 padding: EdgeInsets.all(AppSizes.spacingM),
-                child: Align(
+                child: title != null
+                    ? Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    title,
+                    title!,
                     style: AppTextStyles.h3.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
+                )
+                    : SizedBox(height: 0), // 제목 없을 때는 여백만 유지
               ),
 
               // 콘텐츠

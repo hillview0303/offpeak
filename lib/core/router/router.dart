@@ -6,6 +6,8 @@ import '../../features/home/presentation/pages/search_page.dart';
 import '../../features/home/presentation/pages/nearby_page.dart';
 import '../../features/home/presentation/pages/favorites_page.dart';
 import '../../features/home/presentation/pages/recent_activity_page.dart';
+import '../../features/home/presentation/pages/transportation_recommendation_page.dart';
+import '../../features/home/presentation/pages/quiet_activities_detail_page.dart';
 import '../../features/main/presentation/pages/error_page.dart';
 import '../../features/main/presentation/pages/main_page.dart';
 import '../../features/my/presentation/pages/my_page.dart';
@@ -48,6 +50,22 @@ class AppRouter {
                     path: 'recent',
                     builder: (context, state) => const RecentActivityPage(),
                   ),
+                  GoRoute(
+                    path: 'transportation-recommendation',
+                    builder: (context, state) => const TransportationRecommendationPage(),
+                  ),
+                  GoRoute(
+                    path: 'quiet-activities-detail',
+                    builder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>;
+                      return QuietActivitiesDetailPage(
+                        categoryTitle: extra['categoryTitle'],
+                        categoryType: extra['categoryType'],
+                        categoryGradient: extra['categoryGradient'],
+                        categoryIcon: extra['categoryIcon'],
+                      );
+                    },
+                  ),
                 ],
               ),
             ],
@@ -79,7 +97,7 @@ class AppRouter {
         ],
       ),
     ],
-    errorBuilder: (context, state) => ErrorPage(error: state.error.toString()),
+    errorBuilder: (context, state) => const ErrorPage(),
   );
 
   static GoRouter get router => _router;
@@ -89,7 +107,7 @@ class AppRouter {
 class RoutePaths {
   static const String home = '/home';
   static const String chat = '/chat';
-  static const String my = '/my';  // activity → my로 수정
+  static const String my = '/my';
 
   // 홈 하위 경로들
   static const String algorithmRecommendation = '/home/algorithm-recommendation';
@@ -97,4 +115,6 @@ class RoutePaths {
   static const String nearby = '/home/nearby';
   static const String favorites = '/home/favorites';
   static const String recent = '/home/recent';
+  static const String transportationRecommendation = '/home/transportation-recommendation';
+  static const String quietActivitiesDetail = '/home/quiet-activities-detail';
 }
