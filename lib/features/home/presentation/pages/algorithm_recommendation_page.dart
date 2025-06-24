@@ -144,8 +144,12 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
       builder: (context) => AIFilterModal(
         selectedAreaCode: controller.selectedAreaCode,
         selectedContentType: controller.selectedContentType,
+        selectedSigunguCode: controller.selectedSigunguCode,  // 추가
+        selectedCategoryCode: controller.selectedCategoryCode,  // 추가
         onAreaCodeChanged: (value) => controller.updateAreaCode(value),
         onContentTypeChanged: (value) => controller.updateContentType(value),
+        onSigunguCodeChanged: (value) => controller.updateSigunguCode(value),  // 추가
+        onCategoryCodeChanged: (value) => controller.updateCategoryCode(value),  // 추가
         onApplyFilters: () => controller.loadAIRecommendations(),
       ),
     );

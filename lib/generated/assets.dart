@@ -17,7 +17,12 @@ class Assets {
   static const String fontsPretendardRegular = 'assets/fonts/Pretendard-Regular.otf';
   static const String fontsPretendardSemiBold = 'assets/fonts/Pretendard-SemiBold.otf';
   static const String fontsPretendardThin = 'assets/fonts/Pretendard-Thin.otf';
+  static const String imagesApplogo = 'assets/images/applogo.png';
+  static const String imagesChat = 'assets/images/chat.svg';
   static const String imagesForest = 'assets/images/forest.png';
+  static const String imagesHome = 'assets/images/home.svg';
+  static const String imagesMy = 'assets/images/my.svg';
+  static const String imagesOffpeak = 'assets/images/offpeak.png';
   static const String imagesTour = 'assets/images/tour.png';
   static const String imagesWater = 'assets/images/water.png';
   static const String offpeak = '.env';

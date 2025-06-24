@@ -42,7 +42,7 @@ class NavigationService {
   // 편의 메소드들 (특정 페이지로 바로 이동)
   void goHome() => pushAndRemoveUntil(RoutePaths.home);
   void goChat() => pushAndRemoveUntil(RoutePaths.chat);
-  void goActivity() => pushAndRemoveUntil(RoutePaths.activity);
+  void goActivity() => pushAndRemoveUntil(RoutePaths.my);
   void goAlgorithmRecommendation() => navigateTo(RoutePaths.algorithmRecommendation);
 
   // 백버튼 처리 메소드

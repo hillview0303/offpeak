@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/color.dart';
 import '../../../core/constants/size.dart';
 import '../../../core/constants/style.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import '../../../core/service/unified_laas_api_service.dart'; // ⭐ LaaS 서비스
+import '../../../core/service/tourism_api_service.dart'; // ⭐ 관광공사 API 서비스
 
 // ChatMessage 모델
 class ChatMessage {
@@ -20,7 +20,7 @@ class ChatMessage {
 // Chat State Provider
 final chatMessagesProvider = StateProvider<List<ChatMessage>>((ref) => [
   ChatMessage(
-    text: '안녕하세요! 여행 관련해서 궁금한 것이 있으시면 언제든 물어보세요! 😊',
+    text: '안녕하세요! 여행 관련해서 궁금한 것이 있으시면 언제든 물어보세요! 😊\n\n위치 기반 추천을 원하시면 "내 주변 맛집 추천해줘" 같이 물어보세요!',
     isUser: false,
     timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
   ),
@@ -64,6 +64,19 @@ class ChatPage extends HookConsumerWidget {
         backgroundColor: AppColors.surface,
         elevation: AppSizes.elevationS,
         actions: [
+          IconButton(
+            onPressed: () {
+              // 대화 초기화
+              ref.read(chatMessagesProvider.notifier).state = [
+                ChatMessage(
+                  text: '안녕하세요! 여행 관련해서 궁금한 것이 있으시면 언제든 물어보세요! 😊\n\n위치 기반 추천을 원하시면 "내 주변 맛집 추천해줘" 같이 물어보세요!',
+                  isUser: false,
+                  timestamp: DateTime.now(),
+                ),
+              ];
+            },
+            icon: Icon(Icons.refresh, color: AppColors.textSecondary),
+          ),
           IconButton(
             onPressed: () {},
             icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
@@ -180,9 +193,21 @@ class ChatPage extends HookConsumerWidget {
       child: SafeArea(
         child: Row(
           children: [
-            IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.attach_file, color: AppColors.textSecondary),
+            // ⭐ 퀵 질문 버튼
+            PopupMenuButton<String>(
+              icon: Icon(Icons.lightbulb_outline, color: AppColors.primary),
+              tooltip: '추천 질문',
+              onSelected: (value) {
+                messageController.text = value;
+                _sendMessage(ref, messageController);
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(value: '내 주변 맛집 추천해줘', child: Text('🍽️ 내 주변 맛집 추천')),
+                PopupMenuItem(value: '가족과 갈만한 관광지 알려줘', child: Text('👨‍👩‍👧‍👦 가족 여행지 추천')),
+                PopupMenuItem(value: '데이트 코스 추천해줘', child: Text('💕 데이트 코스 추천')),
+                PopupMenuItem(value: '비오는날 갈만한 실내 장소는?', child: Text('☔ 실내 장소 추천')),
+                PopupMenuItem(value: '부산 대표 관광지 알려줘', child: Text('🏔️ 대표 관광지')),
+              ],
             ),
             Expanded(
               child: Container(
@@ -268,67 +293,38 @@ class ChatPage extends HookConsumerWidget {
     });
   }
 
+  // ⭐ 매우 간소화된 AI 응답 - 데이터만 수집하고 LaaS에 위임
   Future<String> _fetchAIResponse(String userMessage) async {
     try {
-      final projectCode = dotenv.env['LAAS_PROJECT_CODE'];
-      final apiKey = dotenv.env['LAAS_API_KEY'];
-      final hash = dotenv.env['LAAS_HASH'];
+      print('🤖 AI 응답 생성 시작: $userMessage');
 
-      if (projectCode == null || apiKey == null || hash == null) {
-        return '.env 파일 설정을 확인해주세요.';
-      }
+      // ⭐ 위치 기반 질문인지 확인하고 주변 장소 데이터 수집
+      List<NearbyPlace>? nearbyPlaces;
+      if (_isLocationBasedQuery(userMessage)) {
+        print('📍 위치 기반 질문 감지, 주변 장소 정보 수집 중...');
 
-      const String apiUrl = 'https://api-laas.wanted.co.kr/api/preset/v2/chat/completions';
-      final url = Uri.parse(apiUrl);
-
-      final headers = {
-        'project': projectCode,
-        'apiKey': apiKey,
-        'Content-Type': 'application/json; charset=utf-8',
-        'User-Agent': 'Flutter App',
-        'Accept': 'application/json',
-      };
-
-      final requestBody = {
-        'hash': hash,
-        'messages': [
-          {
-            'role': 'user',
-            'content': userMessage,
-          }
-        ]
-      };
-
-      final client = http.Client();
-
-      try {
-        final response = await client.post(
-          url,
-          headers: headers,
-          body: jsonEncode(requestBody),
-        ).timeout(const Duration(seconds: 30));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-
-          if (data['choices'] != null && data['choices'].isNotEmpty) {
-            final choice = data['choices'][0];
-            if (choice['message'] != null && choice['message']['content'] != null) {
-              return choice['message']['content'];
-            }
-          }
-
-          return 'AI 응답을 찾을 수 없습니다.';
-
-        } else {
-          return '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        try {
+          nearbyPlaces = await _getNearbyPlaces(userMessage);
+          print('✅ ${nearbyPlaces?.length ?? 0}개 주변 장소 정보 수집 완료');
+        } catch (e) {
+          print('⚠️ 주변 장소 정보 수집 실패: $e');
+          // 오류가 있어도 기본 질문으로 진행
         }
-
-      } finally {
-        client.close();
       }
+
+      // ⭐ UnifiedLaaSAPIService에 데이터와 함께 전달 (프롬프트는 LaaS에서 처리)
+      print('🌐 UnifiedLaaSAPIService.callAI 호출 중...');
+      final aiResponse = await UnifiedLaaSAPIService.callAIWithContext(
+        userMessage: userMessage,
+        nearbyPlaces: nearbyPlaces,
+      );
+
+      print('✅ AI 응답 생성 완료');
+      return aiResponse;
 
     } catch (e) {
+      print('❌ AI 응답 생성 실패: $e');
+
       if (e.toString().toLowerCase().contains('timeout')) {
         return 'API 응답 시간이 초과되었습니다. 다시 시도해주세요.';
       } else if (e.toString().toLowerCase().contains('socket') ||
@@ -337,6 +333,129 @@ class ChatPage extends HookConsumerWidget {
       } else {
         return '일시적인 오류가 발생했습니다. 다시 시도해주세요.';
       }
+    }
+  }
+
+  // ⭐ 위치 기반 질문인지 판단
+  bool _isLocationBasedQuery(String query) {
+    final locationKeywords = [
+      '내 주변', '근처', '주변', '가까운', '내 근처',
+      '맛집', '음식점', '카페', '관광지', '놀거리',
+      '가볼만한', '추천', '데이트', '코스',
+      '부산', '해운대', '서면', '광안리'
+    ];
+
+    final lowerQuery = query.toLowerCase();
+    return locationKeywords.any((keyword) => lowerQuery.contains(keyword));
+  }
+
+  // ⭐ 주변 장소 데이터만 수집 (프롬프트 구성은 LaaS에서 처리)
+  Future<List<NearbyPlace>> _getNearbyPlaces(String userQuery) async {
+    try {
+      // 현재 위치 가져오기
+      Position? position;
+      try {
+        bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (serviceEnabled) {
+          LocationPermission permission = await Geolocator.checkPermission();
+          if (permission == LocationPermission.whileInUse ||
+              permission == LocationPermission.always) {
+            position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+            ).timeout(const Duration(seconds: 5));
+            print('📍 현재 위치: ${position.latitude}, ${position.longitude}');
+          }
+        }
+      } catch (e) {
+        print('⚠️ 위치 정보 획득 실패: $e');
+      }
+
+      // 카테고리 추정
+      String? category = _inferCategoryFromQuery(userQuery);
+      print('🏷️ 추정된 카테고리: $category');
+
+      List<NearbyPlace> places = [];
+
+      if (position != null) {
+        // ⭐ TourismApiService 사용 - 현재 위치 기반
+        places = await TourismApiService.fetchNearbyPlaces(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          category: category,
+          radius: 5000, // 5km
+        );
+        print('📍 위치 기반 검색: ${places.length}개 장소');
+      } else {
+        // ⭐ TourismApiService 사용 - 부산 지역 기반
+        places = await TourismApiService.fetchPlacesByCategory(
+          category: category ?? '전체',
+          areaCode: '6', // 부산
+        );
+        print('🏙️ 부산 지역 검색: ${places.length}개 장소');
+      }
+
+      // 상위 5개 장소만 반환 (LaaS에서 프롬프트 구성할 때 사용)
+      return places.take(5).toList();
+
+    } catch (e) {
+      print('❌ 주변 장소 데이터 수집 실패: $e');
+      return [];
+    }
+  }
+
+  // ⭐ 질문에서 카테고리 추정
+  String? _inferCategoryFromQuery(String query) {
+    final lowerQuery = query.toLowerCase();
+
+    if (lowerQuery.contains('맛집') || lowerQuery.contains('음식점') ||
+        lowerQuery.contains('식당') || lowerQuery.contains('먹을곳')) {
+      return '음식점';
+    }
+    if (lowerQuery.contains('관광지') || lowerQuery.contains('명소') ||
+        lowerQuery.contains('구경') || lowerQuery.contains('여행')) {
+      return '관광지';
+    }
+    if (lowerQuery.contains('숙박') || lowerQuery.contains('호텔') ||
+        lowerQuery.contains('펜션') || lowerQuery.contains('잘곳')) {
+      return '숙박';
+    }
+    if (lowerQuery.contains('쇼핑') || lowerQuery.contains('쇼핑몰') ||
+        lowerQuery.contains('마트') || lowerQuery.contains('시장')) {
+      return '쇼핑';
+    }
+    if (lowerQuery.contains('문화') || lowerQuery.contains('박물관') ||
+        lowerQuery.contains('미술관') || lowerQuery.contains('전시')) {
+      return '문화시설';
+    }
+    if (lowerQuery.contains('운동') || lowerQuery.contains('스포츠') ||
+        lowerQuery.contains('헬스') || lowerQuery.contains('레저')) {
+      return '레포츠';
+    }
+
+    return null; // 전체 카테고리
+  }
+
+  // ⭐ 카테고리 표시명 변환 (제거 - 필요시 TourismApiService에서 처리)
+  String _getCategoryDisplayName(String category) {
+    switch (category) {
+      case 'tourist_spot':
+        return '관광지';
+      case 'culture':
+        return '문화시설';
+      case 'restaurant':
+        return '음식점';
+      case 'accommodation':
+        return '숙박';
+      case 'shopping':
+        return '쇼핑';
+      case 'leisure':
+        return '레포츠';
+      case 'festival':
+        return '축제/행사';
+      case 'course':
+        return '여행코스';
+      default:
+        return '기타';
     }
   }
 

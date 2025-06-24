@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/color.dart';
@@ -28,101 +29,186 @@ class MainPage extends StatelessWidget {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.shadow,
-            blurRadius: AppSizes.elevationM,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSizes.gapS,
-            vertical: AppSizes.gapXS,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                context: context,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
-                label: '홈',
-                isSelected: navigationShell.currentIndex == 0,
-                onTap: () => _onTap(0),
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 기본 네비게이션 바
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            border: Border(
+              top: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1.0,
               ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.chat_bubble_outline,
-                activeIcon: Icons.chat_bubble,
-                label: '챗',
-                isSelected: navigationShell.currentIndex == 1,
-                onTap: () => _onTap(1),
-              ),
-              _buildNavItem(
-                context: context,
-                icon: Icons.local_activity_outlined,
-                activeIcon: Icons.local_activity,
-                label: '액티비티',
-                isSelected: navigationShell.currentIndex == 2,
-                onTap: () => _onTap(2),
-              ),
-            ],
+            ),
           ),
+          child: SafeArea(
+            child: Container(
+              height: 80,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // 홈 버튼
+                  _buildNavItem(
+                    iconPath: 'assets/images/home.svg',
+                    fallbackIcon: Icons.home,
+                    label: '홈',
+                    isSelected: navigationShell.currentIndex == 0,
+                    onTap: () => _onTap(0),
+                  ),
+
+                  // 챗 버튼 자리 (빈 공간)
+                  const SizedBox(width: 56),
+
+                  // 마이 버튼
+                  _buildNavItem(
+                    iconPath: 'assets/images/my.svg',
+                    fallbackIcon: Icons.person,
+                    label: '마이',
+                    isSelected: navigationShell.currentIndex == 2,
+                    onTap: () => _onTap(2),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // 챗 버튼 (상단에 걸치게)
+        Positioned(
+          top: -28, // 네비게이션 바 위로 올라가게
+          left: 0,
+          right: 0,
+          child: Center(
+            child: _buildFloatingChatButton(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavItem({
+    required String iconPath,
+    required IconData fallbackIcon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // SVG 아이콘 또는 fallback 아이콘
+            _buildSvgIcon(
+              iconPath: iconPath,
+              fallbackIcon: fallbackIcon,
+              size: 24,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem({
-    required BuildContext context,
-    required IconData icon,
-    required IconData activeIcon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            vertical: AppSizes.gapS,
-            horizontal: AppSizes.gapXS,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  key: ValueKey(isSelected),
-                  size: AppSizes.iconM,
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                ),
+  Widget _buildFloatingChatButton() {
+    final isSelected = navigationShell.currentIndex == 1;
+
+    return GestureDetector(
+      onTap: () => _onTap(1),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected ? AppColors.secondary : AppColors.secondary,
+              border: Border.all(
+                color: AppColors.surface,
+                width: 4,
               ),
-              SizedBox(height: AppSizes.gapXS),
-              Text(
-                label,
-                style: AppTextStyles.caption.copyWith(
-                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
-                  fontWeight: isSelected ? AppTextStyles.semiBold : AppTextStyles.regular,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.secondary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: _buildSvgIcon(
+              iconPath: 'assets/images/chat.svg',
+              fallbackIcon: Icons.chat_bubble,
+              size: 32,
+              color: Colors.white,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadowLight,
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Text(
+              '챗',
+              style: TextStyle(
+                fontSize: 12,
+                color: isSelected ? AppColors.secondary : AppColors.secondaryDark,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildSvgIcon({
+    required String iconPath,
+    required IconData fallbackIcon,
+    required double size,
+    required Color color,
+  }) {
+    try {
+      return SvgPicture.asset(
+        iconPath,
+        width: size,
+        height: size,
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+      );
+    } catch (e) {
+      // SVG 로딩 실패시 기본 아이콘 사용
+      print('SVG 로딩 실패: $iconPath, 에러: $e');
+      return Icon(fallbackIcon, size: size, color: color);
+    }
   }
 
   void _onTap(int index) {
