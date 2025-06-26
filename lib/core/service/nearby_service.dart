@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import '../../features/home/presentation/providers/recommendation_model.dart';
 import 'tourism_api_service.dart'; // 새로운 서비스 import
 
 /// 내 주변 장소 추천 서비스 - 관광공사 API 직접 사용으로 개선
@@ -177,6 +178,33 @@ class NearbyService {
     } catch (e) {
       print('❌ [NearbyService] 이미지 조회 실패: $e');
       return [];
+    }
+  }
+
+  /// 🆕 장소 혼잡도 정보 조회
+  static Future<CongestionData?> fetchPlaceCongestion({
+    required String contentId,
+    String? areaCode,
+    String? sigunguCode,
+  }) async {
+    try {
+      print('📊 [NearbyService] 혼잡도 정보 조회: $contentId');
+
+      // ⭐ TourismApiService 사용
+      final congestionData = await TourismApiService.fetchCongestionData(
+        contentId: contentId,
+        areaCode: areaCode,
+        sigunguCode: sigunguCode,
+      );
+
+      if (congestionData != null) {
+        print('✅ [NearbyService] 혼잡도 조회 완료: ${congestionData.currentLevel}%');
+      }
+      return congestionData;
+
+    } catch (e) {
+      print('❌ [NearbyService] 혼잡도 조회 실패: $e');
+      return null;
     }
   }
 

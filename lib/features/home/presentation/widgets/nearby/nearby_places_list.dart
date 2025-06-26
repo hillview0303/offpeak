@@ -5,6 +5,8 @@ import '../../../../../core/constants/style.dart';
 import '../../../../../core/service/nearby_service.dart';
 import '../../../../../core/service/tourism_api_service.dart';
 import '../../../../../core/utils/category_utils.dart';
+// 🆕 혼잡도 모델 import 추가
+import '../../providers/recommendation_model.dart'; // CongestionData를 위한 import
 
 import 'place_card.dart';
 
@@ -405,6 +407,12 @@ class NearbyPlacesList extends StatelessWidget {
                     SizedBox(height: AppSizes.gapL),
                   ],
 
+                  // 🆕 혼잡도 정보 추가 (contentId가 있는 경우만)
+                  if (place.contentId.isNotEmpty) ...[
+                    _buildCongestionSection(place),
+                    SizedBox(height: AppSizes.gapL),
+                  ],
+
                   // 거리 정보
                   _buildInfoSection('거리', place.distance, Icons.location_on),
 
@@ -434,6 +442,183 @@ class NearbyPlacesList extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  // 🆕 혼잡도 정보 섹션 추가
+  Widget _buildCongestionSection(NearbyPlace place) {
+    return FutureBuilder<CongestionData?>(
+      future: TourismApiService.fetchCongestionData(
+        contentId: place.contentId,
+        areaCode: _extractAreaCode(place.address),
+        sigunguCode: null,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            padding: EdgeInsets.all(AppSizes.gapM),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2,
+                  ),
+                ),
+                SizedBox(width: AppSizes.gapS),
+                Text(
+                  '혼잡도 정보 조회 중...',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final congestionData = snapshot.data;
+        if (congestionData == null) {
+          return SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.people_outline,
+                  size: AppSizes.iconS,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: AppSizes.gapS),
+                Text(
+                  '실시간 혼잡도',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+                if (congestionData.dataSource != 'default') ...[
+                  SizedBox(width: AppSizes.gapXS),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: AppSizes.gapXS,
+                      vertical: 2.0,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(AppSizes.gapXS),
+                    ),
+                    child: Text(
+                      'LIVE',
+                      style: TextStyle(
+                        fontSize: 8.0,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            SizedBox(height: AppSizes.gapS),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(AppSizes.gapM),
+              decoration: BoxDecoration(
+                color: _getCongestionColor(congestionData.currentLevel).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(
+                  color: _getCongestionColor(congestionData.currentLevel).withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _getCongestionIcon(congestionData.currentLevel),
+                        color: _getCongestionColor(congestionData.currentLevel),
+                        size: AppSizes.iconM,
+                      ),
+                      SizedBox(width: AppSizes.gapS),
+                      Text(
+                        '${congestionData.currentLevel}% ${_getCongestionText(congestionData.currentLevel)}',
+                        style: AppTextStyles.bodyMedium.copyWith(
+                          color: _getCongestionColor(congestionData.currentLevel),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: AppSizes.gapS),
+                  Text(
+                    '🕐 추천 시간: ${congestionData.recommendedTime}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    '📊 예상 방문자: ${congestionData.expectedVisitors}명',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 🆕 혼잡도 관련 유틸리티 메서드들
+  String? _extractAreaCode(String address) {
+    if (address.contains('서울')) return '1';
+    if (address.contains('인천')) return '2';
+    if (address.contains('대전')) return '3';
+    if (address.contains('대구')) return '4';
+    if (address.contains('광주')) return '5';
+    if (address.contains('부산')) return '6';
+    if (address.contains('울산')) return '7';
+    if (address.contains('세종')) return '8';
+    if (address.contains('경기')) return '31';
+    if (address.contains('강원')) return '32';
+    if (address.contains('충청북도') || address.contains('충북')) return '33';
+    if (address.contains('충청남도') || address.contains('충남')) return '34';
+    if (address.contains('경상북도') || address.contains('경북')) return '35';
+    if (address.contains('경상남도') || address.contains('경남')) return '36';
+    if (address.contains('전라북도') || address.contains('전북')) return '37';
+    if (address.contains('전라남도') || address.contains('전남')) return '38';
+    if (address.contains('제주')) return '39';
+    return null;
+  }
+
+  Color _getCongestionColor(int level) {
+    if (level <= 25) return Color(0xFF4CAF50); // 초록 - 한적함
+    if (level <= 50) return Color(0xFF8BC34A); // 연두 - 보통
+    if (level <= 75) return Color(0xFFFF9800); // 주황 - 혼잡
+    return Color(0xFFF44336); // 빨강 - 매우 혼잡
+  }
+
+  IconData _getCongestionIcon(int level) {
+    if (level <= 25) return Icons.sentiment_very_satisfied;
+    if (level <= 50) return Icons.sentiment_satisfied;
+    if (level <= 75) return Icons.sentiment_neutral;
+    return Icons.sentiment_dissatisfied;
+  }
+
+  String _getCongestionText(int level) {
+    if (level <= 25) return '매우 한적';
+    if (level <= 50) return '적당함';
+    if (level <= 75) return '약간 혼잡';
+    return '매우 혼잡';
   }
 
   // ⭐ 유효한 주소인지 확인
@@ -752,5 +937,4 @@ class NearbyPlacesList extends StatelessWidget {
       ),
     );
   }
-
 }

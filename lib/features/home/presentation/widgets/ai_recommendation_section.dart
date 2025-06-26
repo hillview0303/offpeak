@@ -20,7 +20,13 @@ class AiRecommendationSection extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          NavigationService.instance.navigateTo('/home/algorithm-recommendation');
+          print('🎯 AI 맞춤 추천 페이지로 이동 시도...');
+          try {
+            NavigationService.instance.navigateTo('/home/algorithm-recommendation');
+            print('✅ 네비게이션 성공');
+          } catch (e) {
+            print('❌ 네비게이션 실패: $e');
+          }
         },
         borderRadius: BorderRadius.circular(AppSizes.radiusL),
         child: Container(
@@ -44,6 +50,22 @@ class AiRecommendationSection extends StatelessWidget {
                     width: 140,
                     fit: BoxFit.cover,
                     opacity: const AlwaysStoppedAnimation(0.8),
+                    errorBuilder: (context, error, stackTrace) {
+                      print('⚠️ 이미지 로드 실패: assets/images/tour.png');
+                      return Container(
+                        height: 140,
+                        width: 140,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+                        ),
+                        child: Icon(
+                          Icons.travel_explore,
+                          size: 60,
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -57,7 +79,7 @@ class AiRecommendationSection extends StatelessWidget {
                   children: [
                     // 제목
                     Text(
-                      'AI 맞춤 추천',
+                      '맞춤 여행지 추천',
                       style: AppTextStyles.h3.copyWith(
                         color: AppColors.white,
                         fontWeight: FontWeight.bold,
@@ -70,7 +92,7 @@ class AiRecommendationSection extends StatelessWidget {
                     SizedBox(
                       width: 180,
                       child: Text(
-                        '당신만을 위한 특별한\n여행지를 찾아보세요',
+                        '관광공사 데이터 기반\n당신만을 위한 여행지',
                         style: AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.white.withOpacity(0.95),
                           height: 1.4,

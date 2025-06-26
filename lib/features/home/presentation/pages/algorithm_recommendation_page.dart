@@ -51,7 +51,7 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
 
   Widget _buildHeader(bool isTablet, BuildContext context, WidgetRef ref) {
     return CustomHeaderBar(
-      title: 'AI 맞춤 추천',
+      title: '맞춤 여행지 추천',
       showFilterButton: true,
       onFilterPressed: () => _showFilterDialog(context, ref),
       subtitle: Container(
@@ -73,7 +73,7 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
                 borderRadius: BorderRadius.circular(AppSizes.radiusS - 2),
               ),
               child: Icon(
-                Icons.auto_awesome,
+                Icons.travel_explore,
                 color: Colors.white,
                 size: isTablet ? AppSizes.iconS : 14.0,
               ),
@@ -81,7 +81,7 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
             SizedBox(width: AppSizes.gapS),
             Expanded(
               child: Text(
-                '당신의 취향을 분석해 추천해드려요',
+                '관광공사 데이터 기반 맞춤 추천',
                 style: isTablet
                     ? AppTextStyles.bodyMedium.copyWith(color: Color(0xFF7A9B76))
                     : AppTextStyles.bodySmall.copyWith(color: Color(0xFF7A9B76)),
@@ -129,7 +129,8 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
         return RecommendationCardWidget(
           recommendation: recommendations[index],
           onTap: () {
-            // 상세 페이지로 이동
+            // TODO: 상세 페이지로 이동
+            print('🔍 상세 페이지 이동: ${recommendations[index].title}');
           },
         );
       },
@@ -144,12 +145,10 @@ class AlgorithmRecommendationPage extends HookConsumerWidget {
       builder: (context) => AIFilterModal(
         selectedAreaCode: controller.selectedAreaCode,
         selectedContentType: controller.selectedContentType,
-        selectedSigunguCode: controller.selectedSigunguCode,  // 추가
-        selectedCategoryCode: controller.selectedCategoryCode,  // 추가
+        selectedSigunguCode: controller.selectedSigunguCode, // 간소화됨 (사용하지 않음)
         onAreaCodeChanged: (value) => controller.updateAreaCode(value),
         onContentTypeChanged: (value) => controller.updateContentType(value),
-        onSigunguCodeChanged: (value) => controller.updateSigunguCode(value),  // 추가
-        onCategoryCodeChanged: (value) => controller.updateCategoryCode(value),  // 추가
+        onSigunguCodeChanged: (value) => controller.updateSigunguCode(value), // 간소화됨 (사용하지 않음)
         onApplyFilters: () => controller.loadAIRecommendations(),
       ),
     );
