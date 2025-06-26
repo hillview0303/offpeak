@@ -9,11 +9,9 @@ class AIFilterModal extends ConsumerStatefulWidget {
   final String? selectedAreaCode;
   final String? selectedContentType;
   final String? selectedSigunguCode;
-  final String? selectedCategoryCode;
   final Function(String?) onAreaCodeChanged;
   final Function(String?) onContentTypeChanged;
   final Function(String?) onSigunguCodeChanged;
-  final Function(String?) onCategoryCodeChanged;
   final VoidCallback onApplyFilters;
 
   const AIFilterModal({
@@ -21,23 +19,20 @@ class AIFilterModal extends ConsumerStatefulWidget {
     required this.selectedAreaCode,
     required this.selectedContentType,
     this.selectedSigunguCode,
-    this.selectedCategoryCode,
     required this.onAreaCodeChanged,
     required this.onContentTypeChanged,
     required this.onSigunguCodeChanged,
-    required this.onCategoryCodeChanged,
     required this.onApplyFilters,
   });
 
   @override
-  ConsumerState<AIFilterModal> createState() => _ImprovedAIFilterModalState();
+  ConsumerState<AIFilterModal> createState() => _SimpleAIFilterModalState();
 }
 
-class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
+class _SimpleAIFilterModalState extends ConsumerState<AIFilterModal> {
   String? currentAreaCode;
   String? currentContentType;
   String? currentSigunguCode;
-  String? currentCategoryCode;
 
   @override
   void initState() {
@@ -45,18 +40,17 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
     currentAreaCode = widget.selectedAreaCode;
     currentContentType = widget.selectedContentType;
     currentSigunguCode = widget.selectedSigunguCode;
-    currentCategoryCode = widget.selectedCategoryCode;
   }
 
   @override
   Widget build(BuildContext context) {
-    // LaaS API 상태 확인
-    final laasApiStatus = ref.watch(laasApiStatusProvider);
+    // 관광공사 API 상태 확인
+    final tourismApiStatus = ref.watch(tourismApiStatusProvider);
 
-    return laasApiStatus.when(
+    return tourismApiStatus.when(
       data: (isConnected) {
         if (!isConnected) {
-          return _buildErrorDialog('LaaS API 연결에 실패했습니다. 네트워크를 확인해주세요.');
+          return _buildErrorDialog('관광공사 API 연결에 실패했습니다. 네트워크를 확인해주세요.');
         }
         return _buildMainDialog(context);
       },
@@ -73,8 +67,8 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
       ),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-          maxWidth: 500, // 태블릿 대응
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+          maxWidth: 500,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -89,16 +83,8 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
                     _buildInfoContainer(),
                     SizedBox(height: AppSizes.gapL),
                     _buildAreaSelector(),
-                    if (currentAreaCode != null) ...[
-                      SizedBox(height: AppSizes.spacingM),
-                      _buildSigunguSelector(),
-                    ],
                     SizedBox(height: AppSizes.spacingM),
                     _buildContentTypeSelector(),
-                    if (currentContentType != null) ...[
-                      SizedBox(height: AppSizes.spacingM),
-                      _buildCategorySelector(),
-                    ],
                     SizedBox(height: AppSizes.gapL),
                   ],
                 ),
@@ -128,7 +114,7 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
             CircularProgressIndicator(color: Color(0xFF7A9B76)),
             SizedBox(height: AppSizes.gapL),
             Text(
-              'LaaS 서비스 연결 중...',
+              '관광공사 서비스 연결 중...',
               style: AppTextStyles.bodyMedium,
             ),
           ],
@@ -191,7 +177,7 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
           SizedBox(width: AppSizes.gapS),
           Expanded(
             child: Text(
-              '스마트 추천 필터',
+              '추천 필터',
               style: AppTextStyles.bodyLarge.copyWith(
                 fontWeight: FontWeight.w600,
               ),
@@ -231,14 +217,14 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
       child: Row(
         children: [
           Icon(
-            Icons.auto_awesome,
+            Icons.travel_explore,
             color: Color(0xFF7A9B76),
             size: AppSizes.iconS,
           ),
           SizedBox(width: AppSizes.gapS),
           Expanded(
             child: Text(
-              'LaaS 실시간 관광정보를 기반으로 더 정확한 추천을 제공합니다',
+              '관광공사 데이터를 기반으로 맞춤 추천을 제공합니다',
               style: AppTextStyles.bodySmall.copyWith(
                 color: Color(0xFF7A9B76),
                 fontWeight: FontWeight.w500,
@@ -253,54 +239,24 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
   Widget _buildAreaSelector() {
     final areaCodeList = ref.watch(areaCodeListProvider);
 
-    return areaCodeList.when(
-      data: (items) => CommonDropdown<String>(
-        label: '선호 지역',
-        value: currentAreaCode,
-        hintText: '전체 지역',
-        onChanged: (value) {
-          setState(() {
-            currentAreaCode = value;
-            currentSigunguCode = null; // 지역 변경시 시군구 초기화
-          });
-          widget.onAreaCodeChanged(value);
-          widget.onSigunguCodeChanged(null);
-        },
-        borderColor: Color(0xFFE5E5E5),
-        focusedBorderColor: Color(0xFF7A9B76),
-        items: items.map((item) => DropdownMenuItem(
-          value: item.value,
-          child: Text(item.label),
-        )).toList(),
-      ),
-      loading: () => _buildLoadingDropdown('지역 정보 로드 중...'),
-      error: (error, stack) => _buildErrorDropdown('지역 정보 로드 실패'),
-    );
-  }
-
-  Widget _buildSigunguSelector() {
-    final sigunguList = ref.watch(sigunguListProvider(currentAreaCode));
-
-    return sigunguList.when(
-      data: (items) => CommonDropdown<String>(
-        label: '세부 지역',
-        value: currentSigunguCode,
-        hintText: '전체 시군구',
-        onChanged: (value) {
-          setState(() {
-            currentSigunguCode = value;
-          });
-          widget.onSigunguCodeChanged(value);
-        },
-        borderColor: Color(0xFFE5E5E5),
-        focusedBorderColor: Color(0xFF7A9B76),
-        items: items.map((item) => DropdownMenuItem(
-          value: item.value,
-          child: Text(item.label),
-        )).toList(),
-      ),
-      loading: () => _buildLoadingIndicator('시군구 정보를 불러오는 중...'),
-      error: (error, stack) => _buildErrorIndicator('시군구 정보 로드 실패'),
+    return CommonDropdown<String>(
+      label: '선호 지역',
+      value: currentAreaCode,
+      hintText: '전체 지역',
+      onChanged: (value) {
+        setState(() {
+          currentAreaCode = value;
+          currentSigunguCode = null; // 지역 변경시 시군구 초기화
+        });
+        widget.onAreaCodeChanged(value);
+        widget.onSigunguCodeChanged(null);
+      },
+      borderColor: Color(0xFFE5E5E5),
+      focusedBorderColor: Color(0xFF7A9B76),
+      items: areaCodeList.map((item) => DropdownMenuItem(
+        value: item.value,
+        child: Text(item.label),
+      )).toList(),
     );
   }
 
@@ -314,10 +270,8 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
       onChanged: (value) {
         setState(() {
           currentContentType = value;
-          currentCategoryCode = null; // 콘텐츠타입 변경시 분류 초기화
         });
         widget.onContentTypeChanged(value);
-        widget.onCategoryCodeChanged(null);
       },
       borderColor: Color(0xFFE5E5E5),
       focusedBorderColor: Color(0xFF7A9B76),
@@ -325,134 +279,6 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
         value: item.value,
         child: Text(item.label),
       )).toList(),
-    );
-  }
-
-  Widget _buildCategorySelector() {
-    final categoryList = ref.watch(categoryListProvider(currentContentType));
-
-    return categoryList.when(
-      data: (items) => CommonDropdown<String>(
-        label: '세부 분류',
-        value: currentCategoryCode,
-        hintText: '전체 분류',
-        onChanged: (value) {
-          setState(() {
-            currentCategoryCode = value;
-          });
-          widget.onCategoryCodeChanged(value);
-        },
-        borderColor: Color(0xFFE5E5E5),
-        focusedBorderColor: Color(0xFF7A9B76),
-        items: items.map((item) => DropdownMenuItem(
-          value: item.value,
-          child: Text(item.label),
-        )).toList(),
-      ),
-      loading: () => _buildLoadingIndicator('세부 분류를 불러오는 중...'),
-      error: (error, stack) => _buildErrorIndicator('세부 분류 로드 실패'),
-    );
-  }
-
-  Widget _buildLoadingDropdown(String message) {
-    return Container(
-      padding: EdgeInsets.all(AppSizes.gapM),
-      decoration: BoxDecoration(
-        border: Border.all(color: Color(0xFFE5E5E5)),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Color(0xFF7A9B76),
-            ),
-          ),
-          SizedBox(width: AppSizes.gapS),
-          Text(
-            message,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Color(0xFF7A9B76),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorDropdown(String message) {
-    return Container(
-      padding: EdgeInsets.all(AppSizes.gapM),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 16,
-          ),
-          SizedBox(width: AppSizes.gapS),
-          Text(
-            message,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.red,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingIndicator(String message) {
-    return Container(
-      padding: EdgeInsets.all(AppSizes.gapM),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Color(0xFF7A9B76),
-            ),
-          ),
-          SizedBox(width: AppSizes.gapS),
-          Text(
-            message,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Color(0xFF7A9B76),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorIndicator(String message) {
-    return Container(
-      padding: EdgeInsets.all(AppSizes.gapM),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 16,
-          ),
-          SizedBox(width: AppSizes.gapS),
-          Text(
-            message,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.red,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -479,12 +305,12 @@ class _ImprovedAIFilterModalState extends ConsumerState<AIFilterModal> {
             widget.onApplyFilters();
           },
           icon: Icon(
-            Icons.auto_awesome,
+            Icons.search,
             size: AppSizes.iconS,
             color: Colors.white,
           ),
           label: Text(
-            'AI 맞춤 추천 받기',
+            '맞춤 추천 받기',
             style: AppTextStyles.buttonMedium.copyWith(
               fontWeight: FontWeight.w600,
             ),

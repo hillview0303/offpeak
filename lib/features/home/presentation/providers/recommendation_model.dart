@@ -1,6 +1,6 @@
 import 'dart:math';
 
-// 추천 카드 모델
+/// AI 추천 카드 모델
 class RecommendationCard {
   final String contentId;
   final String title;
@@ -17,7 +17,7 @@ class RecommendationCard {
   final String recommendedActivity;
   final String weatherSuitability;
 
-  RecommendationCard({
+  const RecommendationCard({
     required this.contentId,
     required this.title,
     required this.location,
@@ -34,40 +34,7 @@ class RecommendationCard {
     required this.weatherSuitability,
   });
 
-  factory RecommendationCard.fromJson(Map<String, dynamic> json) {
-    final random = Random();
-    return RecommendationCard(
-      contentId: json['contentid'] ?? '',
-      title: json['title'] ?? '제목 없음',
-      location: '${json['addr1'] ?? ''} ${json['addr2'] ?? ''}'.trim(),
-      description: json['overview'] ?? '설명이 없습니다.',
-      rating: 4.0 + random.nextDouble(),
-      matchPercentage: 70 + random.nextInt(30),
-      congestionLevel: 20 + random.nextInt(60),
-      reason: _generateReason(json['contenttypeid']),
-      imageUrl: json['firstimage'] ?? '',
-      contentTypeId: json['contenttypeid'] ?? '12',
-      transportation: '대중교통 이용 가능',
-      quietReason: '자연 속 한적한 위치',
-      recommendedActivity: '조용한 산책과 사색',
-      weatherSuitability: '날씨 무관하게 방문 가능',
-    );
-  }
-
-  static String _generateReason(String? contentTypeId) {
-    final reasons = {
-      '12': '자연을 좋아하는 당신에게 완벽한 장소',
-      '14': '문화적 경험을 원하는 당신의 취향',
-      '15': '새로운 경험을 추구하는 성향',
-      '25': '체계적인 여행을 선호하는 스타일',
-      '28': '활동적인 여행을 즐기는 성향',
-      '32': '편안한 휴식을 원하는 당신',
-      '39': '미식 여행을 좋아하는 취향',
-    };
-    return reasons[contentTypeId] ?? '당신의 여행 스타일에 맞는 장소';
-  }
-
-  // copyWith 메서드 (상태 변경시 유용)
+  /// 복사 생성자
   RecommendationCard copyWith({
     String? contentId,
     String? title,
@@ -102,7 +69,7 @@ class RecommendationCard {
     );
   }
 
-  // JSON 변환 (찜 목록 로컬 저장시 유용)
+  /// JSON 직렬화
   Map<String, dynamic> toJson() {
     return {
       'contentId': contentId,
@@ -122,41 +89,108 @@ class RecommendationCard {
     };
   }
 
-  // JSON에서 객체 생성 (로컬 저장된 찜 목록 불러올 때 사용)
-  factory RecommendationCard.fromStoredJson(Map<String, dynamic> json) {
+  /// JSON 역직렬화
+  factory RecommendationCard.fromJson(Map<String, dynamic> json) {
     return RecommendationCard(
       contentId: json['contentId'] ?? '',
-      title: json['title'] ?? '제목 없음',
+      title: json['title'] ?? '',
       location: json['location'] ?? '',
-      description: json['description'] ?? '설명이 없습니다.',
+      description: json['description'] ?? '',
       rating: (json['rating'] ?? 4.0).toDouble(),
-      matchPercentage: json['matchPercentage'] ?? 0,
-      congestionLevel: json['congestionLevel'] ?? 50,
+      matchPercentage: json['matchPercentage'] ?? 85,
+      congestionLevel: json['congestionLevel'] ?? 25,
       reason: json['reason'] ?? '',
       imageUrl: json['imageUrl'] ?? '',
       contentTypeId: json['contentTypeId'] ?? '12',
-      transportation: json['transportation'] ?? '대중교통 이용 가능',
-      quietReason: json['quietReason'] ?? '자연 속 한적한 위치',
-      recommendedActivity: json['recommendedActivity'] ?? '조용한 산책과 사색',
-      weatherSuitability: json['weatherSuitability'] ?? '날씨 무관하게 방문 가능',
+      transportation: json['transportation'] ?? '',
+      quietReason: json['quietReason'] ?? '',
+      recommendedActivity: json['recommendedActivity'] ?? '',
+      weatherSuitability: json['weatherSuitability'] ?? '',
     );
   }
 
-  // 고유 ID 반환 (찜 기능에서 사용)
-  String get id => contentId;
+  @override
+  String toString() {
+    return 'RecommendationCard(title: $title, matchPercentage: $matchPercentage%, congestionLevel: $congestionLevel%)';
+  }
 
-  // 동등성 비교 (contentId 기준)
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is RecommendationCard && other.contentId == contentId;
+    return other is RecommendationCard &&
+        other.contentId == contentId;
   }
 
   @override
   int get hashCode => contentId.hashCode;
+}
+
+/// 🆕 혼잡도 데이터 모델 (tourism_api_service.dart에서 import하는 대신 여기서 정의)
+class CongestionData {
+  final int currentLevel; // 현재 혼잡도 (%)
+  final int lastWeekVisitors; // 지난주 방문자수
+  final int expectedVisitors; // 예상 방문자수
+  final String recommendedTime; // 추천 시간
+  final String peakTime; // 피크 시간
+  final int? predictedVisitors; // 예측 방문자수 (선택사항)
+  final String dataSource; // 데이터 출처
+
+  const CongestionData({
+    required this.currentLevel,
+    required this.lastWeekVisitors,
+    required this.expectedVisitors,
+    required this.recommendedTime,
+    required this.peakTime,
+    this.predictedVisitors,
+    required this.dataSource,
+  });
+
+  CongestionData copyWith({
+    int? currentLevel,
+    int? lastWeekVisitors,
+    int? expectedVisitors,
+    String? recommendedTime,
+    String? peakTime,
+    int? predictedVisitors,
+    String? dataSource,
+  }) {
+    return CongestionData(
+      currentLevel: currentLevel ?? this.currentLevel,
+      lastWeekVisitors: lastWeekVisitors ?? this.lastWeekVisitors,
+      expectedVisitors: expectedVisitors ?? this.expectedVisitors,
+      recommendedTime: recommendedTime ?? this.recommendedTime,
+      peakTime: peakTime ?? this.peakTime,
+      predictedVisitors: predictedVisitors ?? this.predictedVisitors,
+      dataSource: dataSource ?? this.dataSource,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'currentLevel': currentLevel,
+      'lastWeekVisitors': lastWeekVisitors,
+      'expectedVisitors': expectedVisitors,
+      'recommendedTime': recommendedTime,
+      'peakTime': peakTime,
+      'predictedVisitors': predictedVisitors,
+      'dataSource': dataSource,
+    };
+  }
+
+  factory CongestionData.fromJson(Map<String, dynamic> json) {
+    return CongestionData(
+      currentLevel: json['currentLevel'] ?? 25,
+      lastWeekVisitors: json['lastWeekVisitors'] ?? 100,
+      expectedVisitors: json['expectedVisitors'] ?? 120,
+      recommendedTime: json['recommendedTime'] ?? '언제든지',
+      peakTime: json['peakTime'] ?? '주말 오후',
+      predictedVisitors: json['predictedVisitors'],
+      dataSource: json['dataSource'] ?? 'default',
+    );
+  }
 
   @override
   String toString() {
-    return 'RecommendationCard(contentId: $contentId, title: $title, location: $location)';
+    return 'CongestionData(currentLevel: $currentLevel%, source: $dataSource)';
   }
 }
