@@ -85,13 +85,12 @@
 
 ## 📱 스크린샷
 
-<p align="center">
-  <span style="width:22%; display:inline-block; text-align:center;">메인 화면</span>
-  <span style="width:22%; display:inline-block; text-align:center;">AI 챗봇</span>
-  <span style="width:22%; display:inline-block; text-align:center;">교통편별 추천</span>
-  <span style="width:22%; display:inline-block; text-align:center;">상세 정보</span>
-</p>
-
+<div style="text-align: center; width: 100%;">
+  <div style="display: inline-block; width: 22%; text-align: center;">메인 화면</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">AI 챗봇</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">교통편별 추천</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">상세 정보</div>
+</div>
 <div align="center">
   <img src="https://github.com/user-attachments/assets/fa20c5d3-1acd-4bba-aa18-50fabd9e13fc" width="22%" />
   <img src="https://github.com/user-attachments/assets/db39f6f1-217c-4d4a-96b4-5393df08fa0b" width="22%" />
