@@ -214,7 +214,7 @@ lib/
 <div align="center">
 
 
-**<a href="https://youtube.com/shorts/NQt_6FKwb0o?feature=share">📺 [전체 시연 영상 보기]</a>**
+**<a href="https://youtu.be/uERXHpv1kT8">📺 [전체 시연 영상 보기]</a>**
 
 </div>
 
