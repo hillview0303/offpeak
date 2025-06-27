@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
+import 'package:intl/intl.dart';
 import '../../features/home/presentation/providers/recommendation_model.dart';
 
 /// 관광공사 API 직접 연결 서비스 - 혼잡도 정보 포함
@@ -10,7 +10,10 @@ class TourismApiService {
   // Base URLs
   static const String _korServiceBaseUrl = 'https://apis.data.go.kr/B551011/KorService2';
   static const String _photoGalleryBaseUrl = 'https://apis.data.go.kr/B551011/PhotoGalleryService1';
-  static const String _congestionBaseUrl = 'https://apis.data.go.kr/B551011/VisitCoreaService';
+
+  // 🔧 수정된 혼잡도 API Base URLs
+  static const String _dataLabBaseUrl = 'https://apis.data.go.kr/B551011/DataLabService';
+  static const String _concentrationBaseUrl = 'https://apis.data.go.kr/B551011/TatsCnctrRateService';
 
   // Timeout 설정
   static const Duration _requestTimeout = Duration(seconds: 15);
@@ -24,23 +27,27 @@ class TourismApiService {
     return key;
   }
 
-  // 캐싱 시스템
+  // 캐싱 시스템 (혼잡도 API는 캐시 제외)
   static final Map<String, dynamic> _apiCache = {};
   static final Map<String, DateTime> _cacheTimestamps = {};
   static const Duration _cacheExpiration = Duration(minutes: 10); // 10분 캐시
 
-  /// HTTP 요청 공통 처리
+  /// HTTP 요청 공통 처리 (혼잡도 API는 캐시 비활성화)
   static Future<Map<String, dynamic>?> _makeRequest(
       String url,
       Map<String, String> params,
       String apiName,
       ) async {
     try {
-      // 캐시 키 생성
       final cacheKey = '$url?${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
 
-      // 캐시 확인
-      if (_apiCache.containsKey(cacheKey)) {
+      // 🔧 혼잡도 관련 API는 캐시 사용 안함
+      final isCongestionApi = apiName.contains('RegionalVisitorData') ||
+          apiName.contains('LocalVisitorData') ||
+          apiName.contains('TouristSpotPrediction');
+
+      // 일반 API만 캐시 확인 (혼잡도 API 제외)
+      if (!isCongestionApi && _apiCache.containsKey(cacheKey)) {
         final timestamp = _cacheTimestamps[cacheKey];
         if (timestamp != null &&
             DateTime.now().difference(timestamp) < _cacheExpiration) {
@@ -79,9 +86,13 @@ class TourismApiService {
           if (header?['resultCode'] == '0000') {
             print('✅ [$apiName] 성공');
 
-            // 캐시에 저장
-            _apiCache[cacheKey] = data;
-            _cacheTimestamps[cacheKey] = DateTime.now();
+            // 🔧 일반 API만 캐시에 저장 (혼잡도 API 제외)
+            if (!isCongestionApi) {
+              _apiCache[cacheKey] = data;
+              _cacheTimestamps[cacheKey] = DateTime.now();
+            } else {
+              print('🚫 [$apiName] 혼잡도 API는 캐시하지 않음');
+            }
 
             return data;
           } else {
@@ -121,7 +132,7 @@ class TourismApiService {
     };
   }
 
-  // ==================== 혼잡도 API 메서드들 ====================
+  // ==================== 🔧 수정된 혼잡도 API 메서드들 ====================
 
   /// 관광지별 혼잡도 정보 조회
   static Future<CongestionData?> fetchCongestionData({
@@ -131,6 +142,10 @@ class TourismApiService {
   }) async {
     try {
       print('📊 혼잡도 정보 조회: contentId=$contentId, area=$areaCode, sigungu=$sigunguCode');
+
+      _apiCache.removeWhere((key, value) =>
+      key.contains('RegionalVisitorData') ||
+          key.contains('LocalVisitorData'));
 
       CongestionData? congestionData;
 
@@ -175,19 +190,19 @@ class TourismApiService {
     }
   }
 
-  /// 기초지자체 지역방문자수 집계 데이터 조회
+  /// 기초지자체 지역방문자수 집계 데이터 조회 - 수정 필요
   static Future<CongestionData?> _fetchLocalVisitorData(String areaCode, String sigunguCode) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['areaCode'] = areaCode;
-      params['signguCode'] = sigunguCode;
-
-      // 현재 년월 설정 (YYYYMM 형식)
       final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+      final endDate = DateFormat('yyyyMMdd').format(now);
+      final startDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 7)));
+
+      final params = _getCommonParams(numOfRows: 10);
+      params['startYmd'] = startDate;
+      params['endYmd'] = endDate;
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitGugunList',
+        '$_dataLabBaseUrl/locgoRegnVisitrDDList',
         params,
         'LocalVisitorData',
       );
@@ -197,9 +212,34 @@ class TourismApiService {
       final items = _extractItems(response);
       if (items == null || items.isEmpty) return null;
 
-      // 최신 데이터 선택
-      final latestItem = items.first;
-      return _parseVisitorDataToCongestion(latestItem, 'local');
+      // 🔧 이 부분을 다음과 같이 수정하세요:
+      Map<String, dynamic>? matchingItem;
+      try {
+        matchingItem = items.cast<Map<String, dynamic>>().firstWhere(
+              (item) => item['signguCode'] == sigunguCode,
+        );
+      } catch (e) {
+        print('⚠️ [LocalVisitorData] 시군구 데이터 없음: $sigunguCode');
+        return null;
+      }
+
+      if (matchingItem != null) {
+        print('✅ [LocalVisitorData] 성공: ${matchingItem['signguNm']}');
+
+        final touNum = int.tryParse(matchingItem['touNum']?.toString() ?? '0') ?? 0;
+
+        return CongestionData(
+          currentLevel: _calculateCongestionFromVisitors(touNum),
+          lastWeekVisitors: touNum,
+          expectedVisitors: (touNum * 1.1).round(),
+          recommendedTime: _generateRecommendedTime(_calculateCongestionFromVisitors(touNum)),
+          peakTime: _generatePeakTime(_calculateCongestionFromVisitors(touNum)),
+          predictedVisitors: null,
+          dataSource: 'local_visitor_api',
+        );
+      }
+
+      return null;
 
     } catch (e) {
       print('❌ 기초지자체 방문자수 조회 실패: $e');
@@ -207,18 +247,19 @@ class TourismApiService {
     }
   }
 
-  /// 광역지자체 지역방문자수 집계 데이터 조회
+  /// 광역지자체 지역방문자수 집계 데이터 조회 - 수정 필요
   static Future<CongestionData?> _fetchRegionalVisitorData(String areaCode) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['areaCode'] = areaCode;
-
-      // 현재 년월 설정
       final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+      final endDate = DateFormat('yyyyMMdd').format(now);
+      final startDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 7)));
+
+      final params = _getCommonParams(numOfRows: 10);
+      params['startYmd'] = startDate;
+      params['endYmd'] = endDate;
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitSidoList',
+        '$_dataLabBaseUrl/metcoRegnVisitrDDList',
         params,
         'RegionalVisitorData',
       );
@@ -228,8 +269,34 @@ class TourismApiService {
       final items = _extractItems(response);
       if (items == null || items.isEmpty) return null;
 
-      final latestItem = items.first;
-      return _parseVisitorDataToCongestion(latestItem, 'regional');
+      // 🔧 이 부분을 다음과 같이 수정하세요:
+      Map<String, dynamic>? matchingItem;
+      try {
+        matchingItem = items.cast<Map<String, dynamic>>().firstWhere(
+              (item) => item['areaCode'] == areaCode,
+        );
+      } catch (e) {
+        print('⚠️ [RegionalVisitorData] 지역 데이터 없음: $areaCode');
+        return null;
+      }
+
+      if (matchingItem != null) {
+        print('✅ [RegionalVisitorData] 성공: ${matchingItem['areaNm']}');
+
+        final touNum = int.tryParse(matchingItem['touNum']?.toString() ?? '0') ?? 0;
+
+        return CongestionData(
+          currentLevel: _calculateCongestionFromVisitors(touNum),
+          lastWeekVisitors: touNum,
+          expectedVisitors: (touNum * 1.1).round(),
+          recommendedTime: _generateRecommendedTime(_calculateCongestionFromVisitors(touNum)),
+          peakTime: _generatePeakTime(_calculateCongestionFromVisitors(touNum)),
+          predictedVisitors: null,
+          dataSource: 'regional_visitor_api',
+        );
+      }
+
+      return null;
 
     } catch (e) {
       print('❌ 광역지자체 방문자수 조회 실패: $e');
@@ -237,29 +304,28 @@ class TourismApiService {
     }
   }
 
-  /// 관광지 집중률 방문자 추이 예측 데이터 조회
+  /// 🔧 수정된 관광지 집중률 방문자 추이 예측 데이터 조회
   static Future<CongestionData?> _fetchTouristSpotPrediction(String contentId) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['contentId'] = contentId;
+      // ⚠️ 이 API는 contentId가 아닌 지역코드 + 관광지명이 필요
+      // 현재는 contentId만 있어서 사용 불가
+      print('⚠️ [TouristSpotPrediction] contentId로는 조회 불가, 지역코드와 관광지명 필요');
 
-      // 현재 년월 설정
-      final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+      // TODO: 추후 관광지명을 파라미터로 받아서 구현
+      /*
+      final params = _getCommonParams(numOfRows: 10);
+      params['areaCd'] = areaCode;
+      params['signguCd'] = sigunguCode ?? '';
+      params['tAtsNm'] = touristSpotName;
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitCnrsRateList',
+        '$_concentrationBaseUrl/tatsCnctrRatedList', // 🔧 수정된 URL
         params,
         'TouristSpotPrediction',
       );
+      */
 
-      if (response == null) return null;
-
-      final items = _extractItems(response);
-      if (items == null || items.isEmpty) return null;
-
-      final predictionItem = items.first;
-      return _parsePredictionDataToCongestion(predictionItem);
+      return null;
 
     } catch (e) {
       print('❌ 관광지 예측 데이터 조회 실패: $e');
@@ -267,7 +333,17 @@ class TourismApiService {
     }
   }
 
-  /// 방문자 데이터를 혼잡도 데이터로 변환
+  /// 방문자 수를 혼잡도 레벨로 변환
+  static int _calculateCongestionFromVisitors(int visitors) {
+    // 방문자 수에 따른 혼잡도 계산 로직
+    if (visitors < 1000) return 20;
+    if (visitors < 5000) return 40;
+    if (visitors < 10000) return 60;
+    if (visitors < 20000) return 80;
+    return 90;
+  }
+
+  /// 방문자 데이터를 혼잡도 데이터로 변환 (기존 메서드 유지)
   static CongestionData _parseVisitorDataToCongestion(Map<String, dynamic> item, String type) {
     try {
       // API 응답 필드는 실제 API 문서에 맞게 조정 필요
@@ -320,7 +396,7 @@ class TourismApiService {
     }
   }
 
-  /// 예측 데이터를 혼잡도 데이터로 변환
+  /// 예측 데이터를 혼잡도 데이터로 변환 (기존 메서드 유지)
   static CongestionData _parsePredictionDataToCongestion(Map<String, dynamic> item) {
     try {
       final cnrsRate = _parseDoubleSafely(item['cnrsRate']) ?? 50.0;
@@ -402,7 +478,7 @@ class TourismApiService {
     return null;
   }
 
-  // ==================== 기본 관광 정보 API 메서드들 ====================
+  // ==================== 기본 관광 정보 API 메서드들 (기존 유지) ====================
 
   /// 위치기반 관광정보 조회 (내 주변 장소용)
   static Future<List<NearbyPlace>> fetchNearbyPlaces({
@@ -697,7 +773,7 @@ class TourismApiService {
     }
   }
 
-  // ==================== 유틸리티 메서드들 ====================
+  // ==================== 유틸리티 메서드들 (기존 유지) ====================
 
   /// API 응답에서 items 추출
   static List<dynamic>? _extractItems(Map<String, dynamic>? response) {
@@ -1041,8 +1117,7 @@ class TourismApiService {
   }
 }
 
-// ==================== 모델 클래스들 ====================
-
+// ==================== 모델 클래스들 (기존 유지) ====================
 
 /// 주변 장소 모델
 class NearbyPlace {

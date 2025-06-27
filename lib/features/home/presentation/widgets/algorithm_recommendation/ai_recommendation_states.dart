@@ -30,19 +30,8 @@ class AILoadingState extends StatelessWidget {
           ),
           SizedBox(height: isTablet ? AppSizes.gapXXL : AppSizes.gapL),
           Text(
-            'AI가 분석 중이에요',
+            '당신만을 위한 특별한\n여행지를 찾고 있어요',
             style: isTablet ? AppTextStyles.h3 : AppTextStyles.h4,
-          ),
-          SizedBox(height: AppSizes.gapS),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSizes.gapXL),
-            child: Text(
-              '당신만을 위한 특별한 여행지를\n찾고 있어요',
-              style: isTablet
-                  ? AppTextStyles.bodyLarge.copyWith(color: Color(0xFF888888))
-                  : AppTextStyles.bodyMedium.copyWith(color: Color(0xFF888888)),
-              textAlign: TextAlign.center,
-            ),
           ),
         ],
       ),

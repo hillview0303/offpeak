@@ -24,14 +24,17 @@ class RecommendationCardWidget extends HookConsumerWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
 
+    // 🔧 수정: isMounted 체크 추가
+    final isMounted = useIsMounted();
+
     // 🆕 이미지 상태 관리
     final images = useState<List<String>>([]);
     final isLoadingImages = useState<bool>(false);
     final currentImageIndex = useState<int>(0);
 
-    // 🆕 이미지 로드 함수
+    // 🆕 이미지 로드 함수 - dispose 체크 추가
     Future<void> loadImages() async {
-      if (recommendation.contentId.isEmpty) return;
+      if (recommendation.contentId.isEmpty || !isMounted()) return;
 
       isLoadingImages.value = true;
 
@@ -40,12 +43,19 @@ class RecommendationCardWidget extends HookConsumerWidget {
 
         final imageList = await TourismApiService.fetchPlaceImages(recommendation.contentId);
 
+        // 🔧 중요: dispose 체크
+        if (!isMounted()) return;
+
         images.value = imageList;
         isLoadingImages.value = false;
 
         print('✅ 메인 이미지 로드 완료: ${images.value.length}개');
       } catch (e) {
         print('❌ 메인 이미지 로드 실패: $e');
+
+        // 🔧 중요: dispose 체크
+        if (!isMounted()) return;
+
         images.value = [];
         isLoadingImages.value = false;
       }
@@ -54,7 +64,9 @@ class RecommendationCardWidget extends HookConsumerWidget {
     // 🆕 초기 이미지 로드
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        loadImages();
+        if (isMounted()) {
+          loadImages();
+        }
       });
       return null;
     }, []);
@@ -98,7 +110,11 @@ class RecommendationCardWidget extends HookConsumerWidget {
                 images.value,
                 isLoadingImages.value,
                 currentImageIndex.value,
-                    (index) => currentImageIndex.value = index,
+                    (index) {
+                  if (isMounted()) {
+                    currentImageIndex.value = index;
+                  }
+                },
                 isTablet,
               ),
               RecommendationInfoSections(
@@ -123,38 +139,13 @@ class RecommendationCardWidget extends HookConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 제목과 매칭률이 세로로 배치
+        // 제목
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 제목
-              Text(
-                recommendation.title,
-                style: isTablet
-                    ? AppTextStyles.h3.copyWith(fontSize: AppTextStyles.fontSizeXXL)
-                    : AppTextStyles.h4,
-              ),
-              SizedBox(height: AppSizes.gapXS + 2),
-              // 매칭률
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppSizes.gapS,
-                  vertical: AppSizes.gapXS,
-                ),
-                decoration: BoxDecoration(
-                  color: cardColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                ),
-                child: Text(
-                  '${recommendation.matchPercentage}% 일치',
-                  style: AppTextStyles.caption.copyWith(
-                    color: cardColor,
-                    fontWeight: AppTextStyles.semiBold,
-                  ),
-                ),
-              ),
-            ],
+          child: Text(
+            recommendation.title,
+            style: isTablet
+                ? AppTextStyles.h3.copyWith(fontSize: AppTextStyles.fontSizeXXL)
+                : AppTextStyles.h4,
           ),
         ),
         SizedBox(width: AppSizes.gapS),
