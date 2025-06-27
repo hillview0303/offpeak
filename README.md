@@ -86,10 +86,10 @@
 ## 📱 스크린샷
 
 <p align="center">
-  <b width="22%">메인 화면 </b>
-  <b width="22%">AI 챗봇 </b>
-  <b width="22%">교통편별 추천 </b>
-  <b width="22%">상세 정보 </b>
+  <span style="width:22%; display:inline-block; text-align:center;">메인 화면</span>
+  <span style="width:22%; display:inline-block; text-align:center;">AI 챗봇</span>
+  <span style="width:22%; display:inline-block; text-align:center;">교통편별 추천</span>
+  <span style="width:22%; display:inline-block; text-align:center;">상세 정보</span>
 </p>
 
 <div align="center">
