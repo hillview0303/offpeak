@@ -85,12 +85,7 @@
 
 ## 📱 스크린샷
 
-<p style="text-align: center; width: 100%;">
-  <span style="display: inline-block; width: 22%; text-align: center;">메인 화면</span>
-  <span style="display: inline-block; width: 22%; text-align: center;">AI 챗봇</span>
-  <span style="display: inline-block; width: 22%; text-align: center;">교통편별 추천</span>
-  <span style="display: inline-block; width: 22%; text-align: center;">상세 정보</span>
-</p>
+
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/fa20c5d3-1acd-4bba-aa18-50fabd9e13fc" width="22%" />
