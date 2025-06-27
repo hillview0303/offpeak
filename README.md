@@ -1,84 +1,236 @@
-# 📱 Offpeak – 조용한 여행지 추천 앱
+# 🌟 Offpeak
+**조용하고 특별한 여행지를 찾아주는 AI 여행 컨시어지**
 
-### 🧠 Powered by Prompt API (Wanted LaaS)
+<div align="center">
 
----
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![AI](https://img.shields.io/badge/AI_Powered-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
 
-## 📌 프로젝트 소개
+**🤖 Powered by Wanted LaaS & 한국관광공사 공공데이터**
 
-**Offpeak**은 프롬프트 API와 공공데이터를 활용해 **혼잡하지 않고 조용한 여행지**를 추천해주는 Flutter 기반 앱입니다.
-사용자는 챗봇 형태로 질문을 입력하고, AI가 지역별 관광지 정보와 혼잡도 예측 데이터를 분석해 맞춤형 여행지를 제안합니다.
-
-> “12월 경주 여행 어때?”, “지금 해운대 혼잡해?”, “서울 조용한 공원 추천해줘” 같은 자연어 질문을 통해 여행 계획을 쉽게 세울 수 있어요.
-
----
-
-## 🛠️ 사용 기술 스택
-
-| 영역 | 기술 |
-|------|------|
-| **앱 개발** | Flutter, Dart |
-| **상태 관리** | Riverpod |
-| **API 연동** | 한국관광공사 TourAPI, Wanted LaaS |
+</div>
 
 ---
 
-## 🧪 주요 기능
+## ✨ 앱 소개
 
-- 🧭 **AI 챗봇 기반 여행지 추천**
-- 🔎 **공공 API 기반 장소 정보, 혼잡도 제공**
-- 🗓️ **사용자 질문 기반 맞춤 추천 예시**
-- 📸 **대표 사진, 방문자 수 등 요약 정보 제공**
-- 🧘 **'조용한 여행'을 위한 추천 최적화**
+> *"혼잡한 여행은 그만, 나만의 조용한 여행지를 찾아보세요!"*
+
+**Offpeak**은 AI와 실시간 데이터를 활용해 **혼잡하지 않은 여행지**를 추천하는 스마트 여행 앱입니다. 
+자연어 대화를 통해 개인 맞춤형 여행 계획을 세우고, 실제 방문자 데이터로 최적의 여행 시간을 제안받을 수 있습니다.
+
+### 🎯 핵심 가치
+- **🧘 평화로운 여행**: 붐비지 않는 숨겨진 명소 발견
+- **🤖 AI 맞춤 추천**: 자연어 대화로 완벽한 여행지 매칭  
+- **📊 데이터 기반**: 실시간 혼잡도와 방문자 통계 제공
+- **🎨 직관적 경험**: 아름답고 사용하기 쉬운 인터페이스
 
 ---
 
-## 🖼️ 스크린샷
+## 🚀 주요 기능
 
-> (여기에 이미지 또는 영상 썸네일 삽입)
-
-```md
-![챗봇 예시](screenshots/chatbot_example.png)
-![추천 결과 예시](screenshots/result_example.png)
+### 💬 **AI 챗봇 여행 컨시어지**
 ```
+"부산 산책로 추천해줘"
+"12월에 경주 여행 어때? 날씨는 괜찮을까?"
+"지금 해운대 혼잡도는 어떻게 돼?"
+"경복궁에 대해 알려줘"
+```
+자연스러운 대화로 맞춤형 여행지를 추천받으세요.
+
+### 🎯 **교통수단별 맞춤 추천**
+- **🚶‍♀️ 도보**: 산책하기 좋은 공원과 거리
+- **🚇 대중교통**: 지하철·버스로 편리하게 갈 수 있는 명소  
+- **🚗 드라이브**: 경치 좋은 드라이브 코스와 전망대
+- **🚴‍♀️ 자전거**: 자전거 전용도로와 라이딩 코스
+
+### 📊 **실시간 혼잡도 정보**
+- 지난주 vs 이번주 방문자 수 비교
+- 최적 방문 시간 추천
+- 피크 시간대 알림
+- 관광공사 공식 데이터 기반
+
+### 🗺️ **스마트 지역 필터**
+- 전국 17개 시도 선택 가능
+- 실제 관광공사 지역코드 연동
+- 지역별 특화 정보 제공
+
+### 📱 **사용자 친화적 인터페이스**
+- 아름다운 카드 기반 디자인
+- 드래그 가능한 상세 정보 시트
+- 즐겨찾기 및 하트 기능
+- 지도 앱 연동 (구글맵, 카카오맵, 네이버맵)
 
 ---
 
-## ⚙️ 실행 방법
+## 🛠️ 기술 스택
 
+### **Frontend**
+- **Flutter** - 크로스플랫폼 앱 개발
+- **Dart** - 메인 프로그래밍 언어
+- **Hooks Riverpod** - 상태 관리 및 의존성 주입
+
+### **APIs**
+- **Wanted LaaS** - AI 프롬프트 API
+- **한국관광공사 TourAPI** - 관광지 정보 및 방문자 통계 및 혼잡도
+
+### **주요 라이브러리**
+- `http` - API 통신
+- `url_launcher` - 외부 앱 연동
+- `flutter_dotenv` - 환경변수 관리
+- `intl` - 국제화 및 날짜 포맷
+
+---
+
+## 📱 스크린샷
+
+<div align="center">
+
+| 메인 화면 | AI 챗봇 | 교통편별 추천 | 상세 정보 |
+|----------|--------|-------------|----------|
+| ![메인](screenshots/home.png) | ![챗봇](screenshots/chatbot.png) | ![교통편](screenshots/transportation.png) | ![상세](screenshots/detail.png) |
+
+</div>
+
+---
+
+## ⚙️ 설치 및 실행
+
+### 📋 **필수 요구사항**
+- Flutter SDK 3.0 이상
+- Dart SDK 3.0 이상
+- Android Studio / VS Code
+- Android/iOS 시뮬레이터 또는 실제 기기
+
+### 🔧 **설치 과정**
+
+1. **레포지토리 클론**
 ```bash
 git clone https://github.com/your-username/offpeak.git
 cd offpeak
+```
+
+2. **의존성 설치**
+```bash
 flutter pub get
+```
+
+3. **환경변수 설정**
+```bash
+# .env 파일 생성
+cp .env.example .env
+```
+
+`.env` 파일에 다음 값들을 설정하세요:
+```env
+# Wanted LaaS API
+LAAS_API_URL=your_laas_api_url
+LAAS_API_KEY=your_laas_api_key
+LAAS_HASH=your_laas_hash
+LAAS_PROJECT_ID=your_laas_project_id
+
+# 한국관광공사 API
+TOUR_API_SERVICE_KEY=your_tour_api_service_key
+```
+
+4. **앱 실행**
+```bash
 flutter run
 ```
 
-> `.env` 파일에 다음과 같은 값을 넣어주세요:
+### 🔑 **API 키 발급**
+- **Wanted LaaS**: [Wanted LaaS 콘솔](https://laas.wanted.co.kr)에서 발급
+- **한국관광공사**: [Tour API](https://www.data.go.kr/data/15101578/openapi.do)에서 신청
 
-```env
-LAAS_API_URL=...
-LAAS_API_KEY=...
-LAAS_HASH=...
-LAAS_PROJECT_ID=...
+---
+
+## 📁 프로젝트 구조
+
+```
+lib/
+├── core/                    # 핵심 공통 기능
+│   ├── constants/          # 색상, 크기, 스타일 상수
+│   ├── widgets/           # 공통 위젯 (헤더, 바텀시트 등)
+│   ├── service/           # 공통 서비스
+│   └── router/            # 라우팅 관리
+├── features/              # 기능별 모듈
+│   ├── home/             # 메인 화면 및 추천
+│   ├── chat/             # AI 챗봇
+│   ├── transportation/   # 교통편별 추천
+│   └── favorites/        # 즐겨찾기
+└── services/             # 외부 API 서비스
+    ├── tourism_api_service.dart
+    ├── laas_service.dart
+    └── transportation_travel_service.dart
 ```
 
 ---
 
-## 📹 시연 영상
+## 🔮 향후 개발 계획
 
-👉 [영상 보러가기](https://youtu.be/your-demo-link)
+### **Phase 2**
+- [ ] 🗺️ 지도 기반 인터랙티브 추천
+- [ ] 📝 여행 일정 플래너
+
+### **Phase 3**  
+- [ ] 👥 사용자 리뷰 및 평점 시스템
+- [ ] 📚 개인화된 여행 다이어리
+- [ ] 🔄 소셜 공유 기능
+- [ ] 🏆 gamification 요소
+
+### **Phase 4**
+- [ ] 🤝 다른 여행 앱과의 연동
+- [ ] 🎯 머신러닝 기반 추천 고도화
+- [ ] 🌍 해외 여행지 확장
+- [ ] 💳 여행 상품 예약 기능
 
 ---
 
-## 📦 향후 개발 계획
+## 🎬 시연 영상
 
-- 지도 기반 추천
-- 사용자 위치 기반 실시간 혼잡도 반영
-- 피드백 기반 챗봇 개선
-- 즐겨찾기 및 다이어리 기능 추가
+<div align="center">
+
+[![Offpeak 데모](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://youtu.be/YOUR_VIDEO_ID)
+
+**📺 [전체 시연 영상 보기](https://youtu.be/YOUR_VIDEO_ID)**
+
+</div>
 
 ---
 
 ## 📄 라이선스
 
-MIT License © 2025 Offpeak Team
+```
+MIT License
+
+Copyright (c) 2025 Offpeak Team
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+---
+
+<div align="center">
+
+### 🌟 **Offpeak과 함께 조용하고 특별한 여행을 떠나보세요!**
+
+**Made with ❤️ by Offpeak Team**
+
+</div>
