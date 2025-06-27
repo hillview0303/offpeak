@@ -213,9 +213,8 @@ lib/
 
 <div align="center">
 
-[![Offpeak 데모](https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg)](https://youtu.be/YOUR_VIDEO_ID)
 
-**📺 [전체 시연 영상 보기](https://youtu.be/YOUR_VIDEO_ID)**
+**📺 [전체 시연 영상 보기]([https://youtu.be/YOUR_VIDEO_ID](https://youtube.com/shorts/NQt_6FKwb0o?feature=share))**
 
 </div>
 
