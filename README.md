@@ -149,20 +149,40 @@ flutter run
 
 ```
 lib/
-├── core/                    # 핵심 공통 기능
-│   ├── constants/          # 색상, 크기, 스타일 상수
-│   ├── widgets/           # 공통 위젯 (헤더, 바텀시트 등)
-│   ├── service/           # 공통 서비스
-│   └── router/            # 라우팅 관리
-├── features/              # 기능별 모듈
-│   ├── home/             # 메인 화면 및 추천
-│   ├── chat/             # AI 챗봇
-│   ├── transportation/   # 교통편별 추천
-│   └── favorites/        # 즐겨찾기
-└── services/             # 외부 API 서비스
-    ├── tourism_api_service.dart
-    ├── laas_service.dart
-    └── transportation_travel_service.dart
+├── core/                          # 핵심 공통 기능
+│   ├── constants/                # 색상, 크기, 스타일 상수
+│   ├── widgets/                  # 공통 위젯 (헤더, 바텀시트 등)
+│   ├── router/                   # 라우팅 관리
+│   └── service/                  # 외부 API 서비스
+│       ├── ai_recommendation_service.dart                  # 맞춤 추천 
+│       ├── nearby_service.dart                             # 내 주변
+│       ├── quiet_activities_service.dart                   # 조용한 활동 추천 
+│       ├── tourism_api_service.dart                        # TourAPI 연결 서비스
+│       ├── transportation_travel_service.dart              # 이동 수단별 추천   
+│       └── unified_laas_api_service.dart                   # Wanted Laas 연결 서비스 
+├── features/                     # 기능별 모듈 (Clean Architecture)
+│   ├── chat/                    # AI 챗봇
+│   │   └── presentation/
+│   │       ├── pages/
+│   │       ├── providers/
+│   │       └── widgets/
+│   ├── home/                    # 메인 화면 및 추천
+│   │   └── presentation/
+│   │       ├── pages/
+│   │       │   └── home_page.dart
+│   │       ├── providers/
+│   │       └── widgets/
+│   ├── main/                    # 메인 네비게이션
+│   │   └── presentation/
+│   │       ├── pages/
+│   │       ├── providers/
+│   │       └── widgets/
+│   └── my/                      # 마이페이지/설정
+│       └── presentation/
+│           ├── pages/
+│           ├── providers/
+│           └── widgets/
+└── main.dart                    # 앱 진입점
 ```
 
 ---
