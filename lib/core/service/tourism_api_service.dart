@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
 import '../../features/home/presentation/providers/recommendation_model.dart';
+import '../utils/html_utils.dart';
 
 /// 관광공사 API 직접 연결 서비스 - 혼잡도 정보 포함
 class TourismApiService {
@@ -1558,13 +1559,14 @@ class TourismApiService {
         final chkcreditcard = introDetail['chkcreditcard']?.toString();
 
         if (usetime != null && usetime.isNotEmpty) {
-          infoParts.add('🕐 이용시간: $usetime');
+          // 🔧 수정: HTML 정리 적용
+          infoParts.add('🕐 이용시간: ${HtmlUtils.toSingleLine(usetime)}');
         }
         if (restdate != null && restdate.isNotEmpty) {
-          infoParts.add('📅 휴무일: $restdate');
+          infoParts.add('📅 휴무일: ${HtmlUtils.toSingleLine(restdate)}');
         }
         if (parking != null && parking.isNotEmpty) {
-          infoParts.add('🚗 주차: $parking');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parking)}');
         }
         if (chkpet == '1') {
           infoParts.add('🐕 반려동물 동반 가능');
@@ -1582,19 +1584,19 @@ class TourismApiService {
         final reservationfood = introDetail['reservationfood']?.toString();
 
         if (opentimefood != null && opentimefood.isNotEmpty) {
-          infoParts.add('🕐 영업시간: $opentimefood');
+          infoParts.add('🕐 영업시간: ${HtmlUtils.toSingleLine(opentimefood)}');
         }
         if (restdatefood != null && restdatefood.isNotEmpty) {
-          infoParts.add('📅 휴무일: $restdatefood');
+          infoParts.add('📅 휴무일: ${HtmlUtils.toSingleLine(restdatefood)}');
         }
         if (treatmenu != null && treatmenu.isNotEmpty) {
-          infoParts.add('🍽️ 대표메뉴: $treatmenu');
+          infoParts.add('🍽️ 대표메뉴: ${HtmlUtils.toSingleLine(treatmenu)}');
         }
         if (reservationfood != null && reservationfood.isNotEmpty) {
-          infoParts.add('📞 예약안내: $reservationfood');
+          infoParts.add('📞 예약안내: ${HtmlUtils.toSingleLine(reservationfood)}');
         }
         if (parkingfood != null && parkingfood.isNotEmpty) {
-          infoParts.add('🚗 주차: $parkingfood');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parkingfood)}');
         }
         break;
 
@@ -1607,22 +1609,22 @@ class TourismApiService {
         final subfacility = introDetail['subfacility']?.toString();
 
         if (checkintime != null && checkintime.isNotEmpty) {
-          infoParts.add('🕐 입실시간: $checkintime');
+          infoParts.add('🕐 입실시간: ${HtmlUtils.toSingleLine(checkintime)}');
         }
         if (checkouttime != null && checkouttime.isNotEmpty) {
-          infoParts.add('🕐 퇴실시간: $checkouttime');
+          infoParts.add('🕐 퇴실시간: ${HtmlUtils.toSingleLine(checkouttime)}');
         }
         if (roomtype != null && roomtype.isNotEmpty) {
-          infoParts.add('🏠 객실유형: $roomtype');
+          infoParts.add('🏠 객실유형: ${HtmlUtils.toSingleLine(roomtype)}');
         }
         if (reservationlodging != null && reservationlodging.isNotEmpty) {
-          infoParts.add('📞 예약안내: $reservationlodging');
+          infoParts.add('📞 예약안내: ${HtmlUtils.toSingleLine(reservationlodging)}');
         }
         if (parkinglodging != null && parkinglodging.isNotEmpty) {
-          infoParts.add('🚗 주차: $parkinglodging');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parkinglodging)}');
         }
         if (subfacility != null && subfacility.isNotEmpty) {
-          infoParts.add('🏊 부대시설: $subfacility');
+          infoParts.add('🏊 부대시설: ${HtmlUtils.toSingleLine(subfacility)}');
         }
         break;
 
@@ -1633,16 +1635,16 @@ class TourismApiService {
         final usefee = introDetail['usefee']?.toString();
 
         if (usetime != null && usetime.isNotEmpty) {
-          infoParts.add('🕐 이용시간: $usetime');
+          infoParts.add('🕐 이용시간: ${HtmlUtils.toSingleLine(usetime)}');
         }
         if (restdate != null && restdate.isNotEmpty) {
-          infoParts.add('📅 휴무일: $restdate');
+          infoParts.add('📅 휴무일: ${HtmlUtils.toSingleLine(restdate)}');
         }
         if (usefee != null && usefee.isNotEmpty) {
-          infoParts.add('💰 이용요금: $usefee');
+          infoParts.add('💰 이용요금: ${HtmlUtils.toSingleLine(usefee)}');
         }
         if (parkingculture != null && parkingculture.isNotEmpty) {
-          infoParts.add('🚗 주차: $parkingculture');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parkingculture)}');
         }
         break;
 
@@ -1653,16 +1655,16 @@ class TourismApiService {
         final usefeeleports = introDetail['usefeeleports']?.toString();
 
         if (openperiod != null && openperiod.isNotEmpty) {
-          infoParts.add('🕐 이용기간: $openperiod');
+          infoParts.add('🕐 이용기간: ${HtmlUtils.toSingleLine(openperiod)}');
         }
         if (restdateleports != null && restdateleports.isNotEmpty) {
-          infoParts.add('📅 휴무일: $restdateleports');
+          infoParts.add('📅 휴무일: ${HtmlUtils.toSingleLine(restdateleports)}');
         }
         if (usefeeleports != null && usefeeleports.isNotEmpty) {
-          infoParts.add('💰 이용요금: $usefeeleports');
+          infoParts.add('💰 이용요금: ${HtmlUtils.toSingleLine(usefeeleports)}');
         }
         if (parkingleports != null && parkingleports.isNotEmpty) {
-          infoParts.add('🚗 주차: $parkingleports');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parkingleports)}');
         }
         break;
 
@@ -1673,16 +1675,16 @@ class TourismApiService {
         final saleitem = introDetail['saleitem']?.toString();
 
         if (opentime != null && opentime.isNotEmpty) {
-          infoParts.add('🕐 영업시간: $opentime');
+          infoParts.add('🕐 영업시간: ${HtmlUtils.toSingleLine(opentime)}');
         }
         if (restdateshopping != null && restdateshopping.isNotEmpty) {
-          infoParts.add('📅 휴무일: $restdateshopping');
+          infoParts.add('📅 휴무일: ${HtmlUtils.toSingleLine(restdateshopping)}');
         }
         if (saleitem != null && saleitem.isNotEmpty) {
-          infoParts.add('🛍️ 판매품목: $saleitem');
+          infoParts.add('🛍️ 판매품목: ${HtmlUtils.toSingleLine(saleitem)}');
         }
         if (parkingshopping != null && parkingshopping.isNotEmpty) {
-          infoParts.add('🚗 주차: $parkingshopping');
+          infoParts.add('🚗 주차: ${HtmlUtils.toSingleLine(parkingshopping)}');
         }
         break;
     }
@@ -1690,40 +1692,23 @@ class TourismApiService {
     return infoParts.join('\n');
   }
 
-  /// API 데이터를 PlaceDetail로 변환
+// 3. _convertToPlaceDetail 메서드도 수정
   static PlaceDetail _convertToPlaceDetail(Map<String, dynamic> detail, String additionalInfo) {
     final overview = detail['overview']?.toString() ?? '';
 
     return PlaceDetail(
       name: detail['title']?.toString() ?? '',
       location: detail['addr1']?.toString() ?? '',
-      description: _cleanDescription(overview),
+      description: HtmlUtils.toMultiLine(overview), // 🔧 수정: HtmlUtils 사용
       phone: detail['tel']?.toString() ?? '',
       hours: '운영시간 정보 없음',
       facilities: additionalInfo.isNotEmpty ? additionalInfo : '시설 정보 없음',
       fee: '요금 정보 없음',
       parking: '주차 정보 없음',
       transport: '교통 정보 없음',
-      special: overview.isNotEmpty ? _cleanDescription(overview) : '',
+      special: overview.isNotEmpty ? HtmlUtils.toMultiLine(overview) : '', // 🔧 수정: HtmlUtils 사용
       recommendedTime: '언제든지',
     );
-  }
-
-  /// HTML 태그 제거 및 설명 정리
-  static String _cleanDescription(String overview) {
-    if (overview.isEmpty) return '';
-
-    try {
-      String cleaned = overview
-          .replaceAll(RegExp(r'<[^>]*>'), '')
-          .replaceAll(RegExp(r'&[a-zA-Z0-9#]+;'), '')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-
-      return cleaned.isNotEmpty ? cleaned : '';
-    } catch (e) {
-      return '';
-    }
   }
 
   /// 캐시 클리어
