@@ -85,23 +85,18 @@
 
 ## 📱 스크린샷
 
+<div style="text-align: center; width: 100%;">
+  <div style="display: inline-block; width: 22%; text-align: center;">메인 화면</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">AI 챗봇</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">교통편별 추천</div>
+  <div style="display: inline-block; width: 22%; text-align: center;">상세 정보</div>
+</div>
+
 <div align="center">
-  <div style="display:inline-block; width:22%; text-align:center; margin: 1%;">
-    <img src="https://github.com/user-attachments/assets/fa20c5d3-1acd-4bba-aa18-50fabd9e13fc" width="100%" />
-    <div>메인 화면</div>
-  </div>
-  <div style="display:inline-block; width:22%; text-align:center; margin: 1%;">
-    <img src="https://github.com/user-attachments/assets/db39f6f1-217c-4d4a-96b4-5393df08fa0b" width="100%" />
-    <div>AI 챗봇</div>
-  </div>
-  <div style="display:inline-block; width:22%; text-align:center; margin: 1%;">
-    <img src="https://github.com/user-attachments/assets/32419bd8-4514-48c7-af21-7699380dd0b0" width="100%" />
-    <div>교통편별 추천</div>
-  </div>
-  <div style="display:inline-block; width:22%; text-align:center; margin: 1%;">
-    <img src="https://github.com/user-attachments/assets/3e8a2523-1ac4-4dab-9d25-588dc9267c40" width="100%" />
-    <div>상세 정보</div>
-  </div>
+  <img src="https://github.com/user-attachments/assets/fa20c5d3-1acd-4bba-aa18-50fabd9e13fc" width="22%" />
+  <img src="https://github.com/user-attachments/assets/db39f6f1-217c-4d4a-96b4-5393df08fa0b" width="22%" />
+  <img src="https://github.com/user-attachments/assets/32419bd8-4514-48c7-af21-7699380dd0b0" width="22%" />
+  <img src="https://github.com/user-attachments/assets/3e8a2523-1ac4-4dab-9d25-588dc9267c40" width="22%" />
 </div>
 
 
