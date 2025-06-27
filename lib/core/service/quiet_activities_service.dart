@@ -3,6 +3,8 @@ import 'package:offpeak/core/service/tourism_api_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
+import '../utils/html_utils.dart';
+
 /// 조용한 활동 전용 서비스
 class QuietActivitiesService {
   static final Random _random = Random();
@@ -56,15 +58,14 @@ class QuietActivitiesService {
       final quietPlaces = <QuietPlace>[];
 
       for (final place in selectedPlaces) {
-        // 각 장소의 상세 정보 조회하여 실제 설명 가져오기
         String description = _generateDescription(place.name, categoryTitle);
 
         if (place.contentId.isNotEmpty) {
           try {
             final placeDetail = await TourismApiService.fetchPlaceDetail(place.contentId);
             if (placeDetail != null && placeDetail.description.isNotEmpty) {
-              // 실제 API에서 가져온 설명을 전체로 사용 (UI에서 줄 수 제한)
-              description = _cleanDescription(placeDetail.description);
+              // 🔧 수정: HtmlUtils 사용
+              description = HtmlUtils.toMultiLine(placeDetail.description);
               print('✅ ${place.name} 실제 설명 조회 성공');
             }
           } catch (e) {
@@ -128,18 +129,18 @@ class QuietActivitiesService {
         apiPlaces = _getFallbackPlaces(categoryTitle);
       }
 
-      // 🔧 수정: 전체 설명 사용 (UI에서 줄 수 제한)
       final quietPlaces = apiPlaces.map((place) => QuietPlace(
         id: place.contentId,
         name: place.name,
         location: place.address,
         description: place.description.isNotEmpty
-            ? _cleanDescription(place.description)
+            ? HtmlUtils.toMultiLine(place.description) // 🔧 수정: HtmlUtils 사용
             : _generateDescription(place.name, categoryTitle),
-        distance: 0.5 + (_random.nextDouble() * 9.5), // 0.5-10km (전체보기용 임시값)
+        distance: 0.5 + (_random.nextDouble() * 9.5),
         category: categoryTitle,
         isRecommended: false,
       )).toList();
+
 
       return QuietPlacesResult(
         places: quietPlaces,
@@ -233,7 +234,7 @@ class QuietActivitiesService {
           name: place.name,
           location: place.address,
           description: place.description.isNotEmpty
-              ? _cleanDescription(place.description)
+              ? HtmlUtils.toMultiLine(place.description) // 🔧 수정: HtmlUtils 사용
               : _generateDescription(place.name, categoryTitle),
           distance: calculatedDistance,
           category: categoryTitle,
@@ -263,20 +264,6 @@ class QuietActivitiesService {
   }
 
   // ==================== 유틸리티 메서드들 ====================
-
-  /// 🔧 수정: HTML 태그만 제거하고 전체 설명 반환 (UI에서 줄 수 제한)
-  static String _cleanDescription(String description) {
-    if (description.isEmpty) return '';
-
-    // HTML 태그와 특수문자만 제거하고 전체 텍스트 반환
-    String cleaned = description
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .replaceAll(RegExp(r'&[a-zA-Z0-9#]+;'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    return cleaned;
-  }
 
   /// 주차별 키 생성 (1주일마다 변경)
   static String _getWeekKey() {
