@@ -89,8 +89,11 @@
 
 | 메인 화면 | AI 챗봇 | 교통편별 추천 | 상세 정보 |
 |----------|--------|-------------|----------|
-|![KakaoTalk_20250626_223011396](https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da)
-| ![챗봇](screenshots/chatbot.png) | ![교통편](screenshots/transportation.png) | ![상세](screenshots/detail.png) |
+|<div style="width:100px;">![KakaoTalk_20250626_223011396](https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da)</div>|
+<div>![KakaoTalk_20250626_223011396](https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da)</div>
+<div>![KakaoTalk_20250626_223011396](https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da)</div>
+<div>![KakaoTalk_20250626_223011396](https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da)</div>
+![챗봇](screenshots/chatbot.png) | ![교통편](screenshots/transportation.png) | ![상세](screenshots/detail.png) |
 
 </div>
 
