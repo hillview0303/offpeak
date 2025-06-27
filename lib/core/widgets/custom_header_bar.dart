@@ -56,11 +56,11 @@ class CustomHeaderBar extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
                 onPressed: onBackPressed ?? () => NavigationService.instance.goBack(),
               ),
-              const SizedBox(width: AppSizes.spacingM),
+              const SizedBox(width: AppSizes.spacingS),
               Expanded(
                 child: Text(
                   title,
-                  style: isTablet ? AppTextStyles.h3 : AppTextStyles.h4,
+                  style: isTablet ? AppTextStyles.bodyMedium : AppTextStyles.bodyMedium,
                 ),
               ),
               if (showFilterButton) ...[

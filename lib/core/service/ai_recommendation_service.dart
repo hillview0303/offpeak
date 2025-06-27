@@ -2,11 +2,11 @@ import 'dart:math';
 import '../../features/home/presentation/providers/recommendation_model.dart';
 import 'tourism_api_service.dart' hide CongestionData;
 
-/// 관광공사 API 기반 AI 스타일 추천 서비스 (실제 혼잡도 데이터 포함)
+/// 관광공사 API 기반 AI 스타일 추천 서비스 (다양성 개선)
 class AIRecommendationService {
   static final Random _random = Random();
 
-  /// 메인 추천 메서드 - 관광공사 API + 혼잡도 정보
+  /// 메인 추천 메서드 - 다양성 보장
   static Future<List<RecommendationCard>> fetchRecommendations({
     String? areaCode,
     String? sigunguCode,
@@ -15,77 +15,185 @@ class AIRecommendationService {
     Map<String, dynamic>? userPreferences,
   }) async {
     try {
-      print('🎯 AI 스타일 추천 시작 (혼잡도 포함)');
+      print('🎯 AI 스타일 추천 시작 (다양성 개선)');
       print('📍 필터: area=$areaCode, sigungu=$sigunguCode, content=$contentType');
 
-      List<NearbyPlace> places = [];
+      List<NearbyPlace> allPlaces = [];
 
       try {
-        // 1. 지역 기반 검색 (지역 코드가 있는 경우)
-        if (areaCode != null) {
-          print('🔍 지역 기반 검색 시작: $areaCode');
-          places = await TourismApiService.fetchPlacesByCategory(
+        // 1. 다양한 페이지에서 장소 수집
+        final futures = <Future<List<NearbyPlace>>>[];
+
+        // 페이지 1-3 동시 요청
+        for (int page = 1; page <= 3; page++) {
+          futures.add(TourismApiService.fetchPlacesByCategory(
             category: _mapContentTypeToCategory(contentType),
             areaCode: areaCode,
-            page: 1,
-          );
-          print('📊 지역 기반 검색 결과: ${places.length}개');
+            page: page,
+          ));
         }
 
-        // 2. 결과가 부족하면 전국 검색
-        if (places.length < 5) {
-          print('🔍 전국 검색 시작...');
+        final results = await Future.wait(futures);
+
+        // 모든 페이지 결과 합치기 (중복 제거)
+        final seenIds = <String>{};
+        for (final pageResults in results) {
+          for (final place in pageResults) {
+            if (place.contentId.isNotEmpty && !seenIds.contains(place.contentId)) {
+              seenIds.add(place.contentId);
+              allPlaces.add(place);
+            }
+          }
+        }
+
+        print('📊 다중 페이지 검색 결과: ${allPlaces.length}개');
+
+        // 2. 결과가 부족하면 전국 검색으로 보완
+        if (allPlaces.length < 15 && areaCode != null) {
+          print('🔍 전국 검색으로 보완...');
           final additionalPlaces = await TourismApiService.fetchPlacesByCategory(
             category: _mapContentTypeToCategory(contentType),
             page: 1,
           );
 
-          // 기존 결과와 중복 제거하여 추가
           for (final place in additionalPlaces) {
-            if (!places.any((p) => p.contentId == place.contentId)) {
-              places.add(place);
+            if (place.contentId.isNotEmpty &&
+                !seenIds.contains(place.contentId) &&
+                allPlaces.length < 50) {
+              seenIds.add(place.contentId);
+              allPlaces.add(place);
             }
           }
-          print('📊 전국 검색 후 총: ${places.length}개');
+          print('📊 전국 검색 후 총: ${allPlaces.length}개');
         }
+
       } catch (e) {
         print('❌ 관광지 검색 실패: $e');
-        // 검색 실패 시 더미 데이터 생성
-        places = _generateDummyPlaces();
-        print('🔧 더미 데이터 생성: ${places.length}개');
+        throw AIServiceException('관광지 정보를 가져올 수 없습니다.');
       }
 
-      if (places.isEmpty) {
-        // 완전히 실패한 경우 기본 더미 데이터
-        places = _generateDummyPlaces();
-        print('🔧 기본 더미 데이터 사용: ${places.length}개');
+      if (allPlaces.isEmpty) {
+        throw AIServiceException('조건에 맞는 관광지를 찾을 수 없습니다.');
       }
 
-      // 3. AI 스타일 추천카드로 변환 (상위 8개) - 실제 혼잡도 데이터 포함
-      final recommendations = await _convertToAIRecommendationsWithCongestion(
-        places.take(8).toList(),
-        userPreferences,
-        contentType,
+      // 3. 스마트 선택 알고리즘 (다양성 보장)
+      final selectedPlaces = _selectDiversePlaces(allPlaces, 8);
+      print('✨ 다양성 기반 선택: ${selectedPlaces.length}개');
+
+      // 4. AI 스타일 추천카드로 변환
+      final recommendations = await _convertToAIRecommendations(
+        selectedPlaces,
         areaCode,
         sigunguCode,
       );
 
-      print('✅ AI 스타일 추천 완료: ${recommendations.length}개 (실제 혼잡도 포함)');
+      print('✅ AI 스타일 추천 완료: ${recommendations.length}개 (다양성 개선)');
       return recommendations;
 
     } catch (e) {
-      print('❌ AI 추천 서비스 완전 실패: $e');
-
-      // 최후의 수단: 하드코딩된 추천 반환
-      return _generateFallbackRecommendations();
+      print('❌ AI 추천 서비스 실패: $e');
+      if (e is AIServiceException) rethrow;
+      throw AIServiceException('추천 서비스에 문제가 발생했습니다.');
     }
   }
 
-  /// NearbyPlace를 AI 스타일 RecommendationCard로 변환 (실제 혼잡도 포함)
-  static Future<List<RecommendationCard>> _convertToAIRecommendationsWithCongestion(
+  /// 다양성을 보장하는 장소 선택 알고리즘
+  static List<NearbyPlace> _selectDiversePlaces(List<NearbyPlace> allPlaces, int count) {
+    if (allPlaces.length <= count) return allPlaces;
+
+    final selected = <NearbyPlace>[];
+    final remaining = List<NearbyPlace>.from(allPlaces);
+
+    // 1. 카테고리별 다양성 보장
+    final categoryGroups = <String, List<NearbyPlace>>{};
+    for (final place in remaining) {
+      categoryGroups.putIfAbsent(place.category, () => []).add(place);
+    }
+
+    // 2. 각 카테고리에서 최소 1개씩 선택
+    for (final category in categoryGroups.keys) {
+      if (selected.length >= count) break;
+
+      final categoryPlaces = categoryGroups[category]!;
+      if (categoryPlaces.isNotEmpty) {
+        final randomIndex = _random.nextInt(categoryPlaces.length);
+        final selectedPlace = categoryPlaces[randomIndex];
+        selected.add(selectedPlace);
+        remaining.remove(selectedPlace);
+      }
+    }
+
+    // 3. 남은 슬롯을 지역 다양성으로 채우기
+    while (selected.length < count && remaining.isNotEmpty) {
+      NearbyPlace? bestChoice;
+      double maxDiversity = -1;
+
+      for (final candidate in remaining) {
+        double diversity = _calculateLocationDiversity(candidate, selected);
+        if (diversity > maxDiversity) {
+          maxDiversity = diversity;
+          bestChoice = candidate;
+        }
+      }
+
+      if (bestChoice != null) {
+        selected.add(bestChoice);
+        remaining.remove(bestChoice);
+      } else {
+        // 다양성 계산 실패시 랜덤 선택
+        final randomIndex = _random.nextInt(remaining.length);
+        selected.add(remaining.removeAt(randomIndex));
+      }
+    }
+
+    // 4. 매번 다른 순서로 섞기
+    selected.shuffle(_random);
+
+    print('🎲 선택된 장소 다양성:');
+    final categoryCount = <String, int>{};
+    for (final place in selected) {
+      categoryCount[place.category] = (categoryCount[place.category] ?? 0) + 1;
+      print('   ${place.name} (${place.category})');
+    }
+    print('📊 카테고리 분포: $categoryCount');
+
+    return selected;
+  }
+
+  /// 지역 다양성 계산
+  static double _calculateLocationDiversity(NearbyPlace candidate, List<NearbyPlace> selected) {
+    if (selected.isEmpty) return 1.0;
+
+    double totalSimilarity = 0.0;
+
+    for (final existing in selected) {
+      final similarity = _calculateAddressSimilarity(candidate.address, existing.address);
+      totalSimilarity += similarity;
+    }
+
+    return 1.0 - (totalSimilarity / selected.length);
+  }
+
+  /// 주소 기반 유사성 계산
+  static double _calculateAddressSimilarity(String addr1, String addr2) {
+    final words1 = addr1.split(' ').where((w) => w.isNotEmpty).toList();
+    final words2 = addr2.split(' ').where((w) => w.isNotEmpty).toList();
+
+    if (words1.isEmpty || words2.isEmpty) return 0.0;
+
+    int commonWords = 0;
+    for (final word in words1) {
+      if (words2.contains(word)) {
+        commonWords++;
+      }
+    }
+
+    return commonWords / max(words1.length, words2.length);
+  }
+
+  /// AI 스타일 추천카드로 변환 (필수 필드만)
+  static Future<List<RecommendationCard>> _convertToAIRecommendations(
       List<NearbyPlace> places,
-      Map<String, dynamic>? userPreferences,
-      String? contentType,
       String? areaCode,
       String? sigunguCode,
       ) async {
@@ -108,7 +216,7 @@ class AIRecommendationService {
           }
         }
 
-        // 🆕 실제 혼잡도 데이터 가져오기
+        // 혼잡도 데이터 가져오기
         CongestionData? congestionData;
         if (place.contentId.isNotEmpty) {
           try {
@@ -125,28 +233,26 @@ class AIRecommendationService {
         }
 
         // 혼잡도 데이터가 없으면 기본값 생성
-        congestionData ??= _generateDefaultCongestionData(place, contentType);
+        congestionData ??= _generateDefaultCongestionData(place);
 
-        // AI 스타일 추천카드 생성 (실제 혼잡도 적용)
+        // ✨ 간소화된 추천카드 생성 (필수 필드만)
         final recommendation = RecommendationCard(
           contentId: place.contentId,
           title: place.name,
           location: place.address,
           description: detailedDescription.isNotEmpty
               ? detailedDescription
-              : _generateSmartDescription(place, contentType),
-          rating: _generateSmartRating(place, i),
-          matchPercentage: _calculateMatchPercentage(place, userPreferences, i),
-          congestionLevel: congestionData.currentLevel, // 🆕 실제 혼잡도 사용
-          reason: _generateAIReason(place, congestionData),
-          imageUrl: '', // TourismApiService에서 이미지 로드는 별도 처리
+              : '${place.name}에서 특별한 여행 경험을 만끽해보세요.',
+          rating: 4.5, // 고정값
+          matchPercentage: 90, // 고정값
+          congestionLevel: congestionData.currentLevel,
+          reason: '', // 빈 값
+          imageUrl: '', // 별도 로드
           contentTypeId: _mapCategoryToContentTypeId(place.category) ?? '12',
-          transportation: _generateSmartTransportation(place.address),
-          quietReason: _generateQuietReason(place, congestionData), // 🆕 혼잡도 기반
-          recommendedActivity: _generateRecommendedActivity(place, contentType),
-          weatherSuitability: _generateWeatherSuitability(place, contentType),
-          // 🆕 추가 혼잡도 정보 (현재 RecommendationCard 모델에 없으므로 주석 처리)
-          // congestionData: congestionData,
+          transportation: '', // 빈 값
+          quietReason: '', // 빈 값
+          recommendedActivity: '', // 빈 값
+          weatherSuitability: '', // 빈 값
         );
 
         recommendations.add(recommendation);
@@ -155,76 +261,73 @@ class AIRecommendationService {
       }
     }
 
-    // 매칭률 기준으로 정렬
-    recommendations.sort((a, b) => b.matchPercentage.compareTo(a.matchPercentage));
+    // 최종 랜덤 섞기
+    recommendations.shuffle(_random);
 
     return recommendations;
   }
 
-  /// 🆕 실제 혼잡도 데이터 기반 기본값 생성
-  static CongestionData _generateDefaultCongestionData(NearbyPlace place, String? contentType) {
-    final random = Random();
+  /// 기본 혼잡도 데이터 생성 (간소화)
+  static CongestionData _generateDefaultCongestionData(NearbyPlace place) {
+    final baseSeed = place.name.hashCode + (place.category.hashCode * 7);
+    final timeSeed = DateTime.now().hour;
+    final seededRandom = Random(baseSeed + timeSeed);
 
-    // place 이름과 카테고리 기반으로 일관된 값 생성
-    final seed = place.name.hashCode + (place.category.hashCode * 7);
-    final seededRandom = Random(seed);
-
-    // 카테고리별 기본 혼잡도 패턴
     int baseLevel;
     int baseVisitors;
     String baseRecommendedTime;
 
     switch (place.category) {
       case 'tourist_spot':
-        baseLevel = 25 + seededRandom.nextInt(25); // 25-50%
-        baseVisitors = 150 + seededRandom.nextInt(200); // 150-350명
+        baseLevel = 20 + seededRandom.nextInt(30);
+        baseVisitors = 100 + seededRandom.nextInt(250);
         baseRecommendedTime = '평일 오전 권장';
         break;
       case 'culture':
-        baseLevel = 15 + seededRandom.nextInt(20); // 15-35%
-        baseVisitors = 80 + seededRandom.nextInt(120); // 80-200명
+        baseLevel = 10 + seededRandom.nextInt(25);
+        baseVisitors = 60 + seededRandom.nextInt(140);
         baseRecommendedTime = '언제든지 방문 가능';
         break;
       case 'restaurant':
-        baseLevel = 35 + seededRandom.nextInt(20); // 35-55%
-        baseVisitors = 200 + seededRandom.nextInt(150); // 200-350명
+        baseLevel = 30 + seededRandom.nextInt(25);
+        baseVisitors = 150 + seededRandom.nextInt(200);
         baseRecommendedTime = '식사시간 외 권장';
         break;
       case 'accommodation':
-        baseLevel = 20 + seededRandom.nextInt(15); // 20-35%
-        baseVisitors = 60 + seededRandom.nextInt(80); // 60-140명
+        baseLevel = 15 + seededRandom.nextInt(20);
+        baseVisitors = 40 + seededRandom.nextInt(100);
         baseRecommendedTime = '평일 예약 권장';
         break;
       default:
-        baseLevel = 20 + seededRandom.nextInt(30); // 20-50%
-        baseVisitors = 100 + seededRandom.nextInt(150); // 100-250명
+        baseLevel = 15 + seededRandom.nextInt(35);
+        baseVisitors = 80 + seededRandom.nextInt(170);
         baseRecommendedTime = '오전 시간 권장';
     }
 
-    // 지역별 조정 (주소 기반)
+    // 지역별 조정
     if (place.address.contains('서울')) {
-      baseLevel += 10;
-      baseVisitors = (baseVisitors * 1.5).round();
+      baseLevel += 5 + seededRandom.nextInt(10);
+      baseVisitors = (baseVisitors * (1.3 + seededRandom.nextDouble() * 0.4)).round();
     } else if (place.address.contains('부산') || place.address.contains('제주')) {
-      baseLevel += 5;
-      baseVisitors = (baseVisitors * 1.2).round();
+      baseLevel += seededRandom.nextInt(8);
+      baseVisitors = (baseVisitors * (1.1 + seededRandom.nextDouble() * 0.3)).round();
     }
 
-    final expectedVisitors = (baseVisitors * (0.9 + seededRandom.nextDouble() * 0.2)).round();
+    final expectedVisitors = (baseVisitors * (0.85 + seededRandom.nextDouble() * 0.3)).round();
 
     return CongestionData(
-      currentLevel: baseLevel,
+      currentLevel: baseLevel.clamp(10, 85),
       lastWeekVisitors: baseVisitors,
       expectedVisitors: expectedVisitors,
       recommendedTime: baseRecommendedTime,
-      peakTime: _generatePeakTimeByCategory(place.category),
+      peakTime: _generatePeakTime(place.category),
       predictedVisitors: null,
-      dataSource: 'generated',
+      dataSource: 'generated_diverse',
     );
   }
 
-  /// 🆕 카테고리별 피크 시간 생성
-  static String _generatePeakTimeByCategory(String category) {
+  /// 피크 시간 생성
+  static String _generatePeakTime(String category) {
     switch (category) {
       case 'tourist_spot':
         return '주말 오후 1-4시';
@@ -241,195 +344,6 @@ class AIRecommendationService {
     }
   }
 
-  /// 🆕 AI 추천 이유 생성 (혼잡도 고려)
-  static String _generateAIReason(NearbyPlace place, CongestionData congestionData) {
-    final congestionLevel = congestionData.currentLevel;
-
-    if (congestionLevel <= 25) {
-      return 'AI 분석 결과 현재 매우 한적하여 여유로운 관광이 가능합니다';
-    } else if (congestionLevel <= 40) {
-      return 'AI 분석 결과 적당한 활기가 있으면서도 쾌적한 환경입니다';
-    } else if (congestionLevel <= 60) {
-      return 'AI 분석 결과 인기 있는 명소이지만 방문 시간 조절로 쾌적하게 즐길 수 있습니다';
-    } else {
-      return 'AI 분석 결과 매우 인기 있는 장소로, 이른 시간 방문을 권장합니다';
-    }
-  }
-
-  /// 🆕 조용한 이유 생성 (실제 혼잡도 반영)
-  static String _generateQuietReason(NearbyPlace place, CongestionData congestionData) {
-    final congestionLevel = congestionData.currentLevel;
-    final recommendedTime = congestionData.recommendedTime;
-
-    if (congestionLevel <= 25) {
-      return '현재 방문자가 적어 조용하고 평화로운 분위기를 만끽할 수 있습니다. $recommendedTime';
-    } else if (congestionLevel <= 40) {
-      return '적당한 인파로 활기는 있지만 여전히 여유롭게 둘러볼 수 있는 환경입니다. $recommendedTime';
-    } else if (congestionLevel <= 60) {
-      return '인기 있는 장소이지만 $recommendedTime에 방문하면 한적하게 즐길 수 있습니다';
-    } else {
-      return '많은 사람들이 찾는 명소이므로 $recommendedTime에 방문하여 혼잡함을 피하세요';
-    }
-  }
-
-  /// 스마트 설명 생성
-  static String _generateSmartDescription(NearbyPlace place, String? contentType) {
-    final locationKeywords = _extractLocationKeywords(place.address);
-    final typeKeywords = _getContentTypeKeywords(contentType);
-
-    return '$locationKeywords에 위치한 ${typeKeywords}입니다. ${place.name}은(는) 특별한 매력과 독특한 분위기로 방문객들에게 잊지 못할 경험을 선사합니다.';
-  }
-
-  /// 스마트 평점 생성
-  static double _generateSmartRating(NearbyPlace place, int index) {
-    // 이름 길이와 인덱스를 기반으로 4.0-4.9 사이 생성
-    final base = 4.0 + (place.name.length % 10) / 10;
-    final bonus = (8 - index) * 0.05; // 상위 순위일수록 높은 점수
-    return double.parse((base + bonus).toStringAsFixed(1));
-  }
-
-  /// 매칭률 계산
-  static int _calculateMatchPercentage(
-      NearbyPlace place,
-      Map<String, dynamic>? preferences,
-      int index
-      ) {
-    int baseScore = 85 + _random.nextInt(10); // 85-95% 기본
-
-    // 순위 보너스 (상위일수록 높음)
-    int rankBonus = (8 - index) * 2;
-
-    // 카테고리별 보너스
-    int categoryBonus = 0;
-    switch (place.category) {
-      case 'tourist_spot':
-        categoryBonus = 5;
-        break;
-      case 'culture':
-        categoryBonus = 3;
-        break;
-      default:
-        categoryBonus = 2;
-    }
-
-    return (baseScore + rankBonus + categoryBonus).clamp(85, 99);
-  }
-
-  /// 스마트 교통 정보 생성
-  static String _generateSmartTransportation(String address) {
-    if (address.contains('서울')) {
-      return '지하철 및 버스 이용 가능, 도심 접근성 우수';
-    } else if (address.contains('부산')) {
-      return '부산 지하철 및 시내버스 이용, 해안 접근 편리';
-    } else if (address.contains('제주')) {
-      return '렌터카 또는 관광버스 이용 권장, 자연경관 드라이브';
-    } else if (address.contains('경기')) {
-      return '수도권 전철 및 광역버스 이용 가능';
-    } else {
-      return '대중교통 또는 자가용 이용, 지역 교통정보 확인 권장';
-    }
-  }
-
-  /// 추천 활동 생성
-  static String _generateRecommendedActivity(NearbyPlace place, String? contentType) {
-    switch (place.category) {
-      case 'tourist_spot':
-        return '자연 산책, 사진 촬영, 명상과 휴식, 일출/일몰 감상';
-      case 'culture':
-        return '전시 관람, 문화 체험, 역사 학습, 조용한 독서';
-      case 'restaurant':
-        return '현지 음식 체험, 여유로운 식사, 지역 특산품 맛보기';
-      case 'accommodation':
-        return '휴식과 재충전, 지역 탐방, 온천/스파 이용';
-      case 'shopping':
-        return '지역 특산품 구매, 전통 공예품 체험, 여유로운 쇼핑';
-      default:
-        return '여유로운 탐방, 현지 문화 체험, 조용한 휴식';
-    }
-  }
-
-  /// 날씨 적합성 생성
-  static String _generateWeatherSuitability(NearbyPlace place, String? contentType) {
-    switch (place.category) {
-      case 'tourist_spot':
-        return '맑은 날 방문 권장, 우천 시에도 실내 휴식 공간 있음';
-      case 'culture':
-        return '실내 시설로 날씨와 무관하게 이용 가능, 사계절 추천';
-      case 'restaurant':
-        return '실내 공간으로 날씨 영향 없음, 계절 메뉴 즐기기 좋음';
-      case 'accommodation':
-        return '실내 숙박으로 날씨 무관, 계절별 다른 매력 체험 가능';
-      default:
-        return '날씨 조건에 따라 실내외 활동 조절 가능, 사계절 방문 적합';
-    }
-  }
-
-  /// 더미 데이터 생성 (테스트용)
-  static List<NearbyPlace> _generateDummyPlaces() {
-    return [
-      NearbyPlace(
-        contentId: '2661301',
-        name: '해운대해수욕장',
-        address: '부산광역시 해운대구 해운대해변로 264',
-        distance: '1.2km',
-        category: 'tourist_spot',
-        rating: 4.5,
-        isOpen: true,
-        description: '부산의 대표적인 해수욕장으로 아름다운 백사장이 유명합니다.',
-        reason: '조용한 시간대 추천',
-        tip: '이른 아침이나 저녁 시간 방문 권장',
-      ),
-      NearbyPlace(
-        contentId: '2661302',
-        name: '광안리해수욕장',
-        address: '부산광역시 수영구 광안해변로 219',
-        distance: '2.1km',
-        category: 'tourist_spot',
-        rating: 4.3,
-        isOpen: true,
-        description: '광안대교의 야경을 감상할 수 있는 해수욕장입니다.',
-        reason: '야경 명소',
-        tip: '밤에 방문하면 더욱 아름다운 경관 감상 가능',
-      ),
-      NearbyPlace(
-        contentId: '2661303',
-        name: '태종대',
-        address: '부산광역시 영도구 전망로 24',
-        distance: '5.7km',
-        category: 'tourist_spot',
-        rating: 4.7,
-        isOpen: true,
-        description: '절벽과 바다가 어우러진 부산의 대표 관광지입니다.',
-        reason: '자연 경관',
-        tip: '등대까지 산책로 이용 추천',
-      ),
-    ];
-  }
-
-  /// 완전 실패 시 폴백 추천 (하드코딩)
-  static List<RecommendationCard> _generateFallbackRecommendations() {
-    print('🆘 폴백 추천 데이터 생성');
-
-    return [
-      RecommendationCard(
-        contentId: 'fallback_1',
-        title: '추천 서비스 준비 중',
-        location: '전국',
-        description: '현재 추천 서비스를 준비하고 있습니다. 잠시 후 다시 시도해주세요.',
-        rating: 4.0,
-        matchPercentage: 85,
-        congestionLevel: 25,
-        reason: '서비스 준비 중',
-        imageUrl: '',
-        contentTypeId: '12',
-        transportation: '서비스 준비 중입니다',
-        quietReason: '조용한 여행지를 준비하고 있습니다',
-        recommendedActivity: '서비스 준비 중입니다',
-        weatherSuitability: '날씨와 상관없이 이용 가능합니다',
-      ),
-    ];
-  }
-
   // ==================== 유틸리티 메서드들 ====================
 
   /// 컨텐츠 타입을 카테고리로 변환
@@ -443,7 +357,7 @@ class AIRecommendationService {
       case '32': return '숙박';
       case '38': return '쇼핑';
       case '39': return '음식점';
-      default: return '관광지'; // null 대신 기본값 반환
+      default: return '관광지';
     }
   }
 
@@ -462,50 +376,22 @@ class AIRecommendationService {
     }
   }
 
-  /// 지역 키워드 추출
-  static String _extractLocationKeywords(String address) {
-    if (address.contains('서울')) return '서울 도심';
-    if (address.contains('부산')) return '부산 해안';
-    if (address.contains('제주')) return '제주 자연';
-    if (address.contains('경기')) return '경기 근교';
-    if (address.contains('강원')) return '강원 산간';
-    if (address.contains('전라')) return '전라 남도';
-    if (address.contains('경상')) return '경상도 지역';
-    if (address.contains('충청')) return '충청 내륙';
-    return '아름다운 지역';
-  }
-
-  /// 컨텐츠 타입 키워드
-  static String _getContentTypeKeywords(String? contentTypeId) {
-    switch (contentTypeId) {
-      case '12': return '자연과 역사가 어우러진 관광명소';
-      case '14': return '문화와 예술이 살아있는 문화공간';
-      case '15': return '다채로운 즐거움이 가득한 축제현장';
-      case '28': return '활동적인 체험이 가능한 레포츠시설';
-      case '32': return '편안한 휴식이 보장되는 숙박시설';
-      case '38': return '특별한 쇼핑 경험이 가능한 상업시설';
-      case '39': return '맛있는 음식을 즐길 수 있는 맛집';
-      default: return '특별한 경험이 가능한 여행지';
-    }
-  }
-
-  /// 관광공사 API 연결 확인
+  /// HTTP 연결 상태 확인
   static Future<bool> checkTourismApiConnection() async {
     try {
       print('🔍 관광공사 API 연결 확인 시작...');
 
-      // 간단한 지역 코드 조회로 연결 확인
       final places = await TourismApiService.fetchPlacesByCategory(
         category: '관광지',
         page: 1,
       );
 
       print('✅ 관광공사 API 연결 성공: ${places.length}개 장소 조회됨');
-      return places.isNotEmpty;
+      return true;
+
     } catch (e) {
       print('❌ 관광공사 API 연결 확인 실패: $e');
-      // 연결 실패해도 일단 true 반환 (테스트용)
-      return true;
+      return false;
     }
   }
 }

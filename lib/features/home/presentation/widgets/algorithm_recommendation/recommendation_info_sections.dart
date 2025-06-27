@@ -19,13 +19,16 @@ class RecommendationInfoSections extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 🔧 수정: isMounted 체크 추가
+    final isMounted = useIsMounted();
+
     // 🆕 Hook 상태 관리 (혼잡도만)
     final congestionData = useState<CongestionData?>(null);
     final isLoadingCongestion = useState<bool>(false);
 
-    // 🆕 혼잡도 데이터 로드 함수
+    // 🆕 혼잡도 데이터 로드 함수 - dispose 체크 추가
     Future<void> loadCongestionData() async {
-      if (recommendation.contentId.isEmpty) {
+      if (recommendation.contentId.isEmpty || !isMounted()) {
         congestionData.value = _getDefaultCongestionData(recommendation);
         return;
       }
@@ -41,6 +44,9 @@ class RecommendationInfoSections extends HookConsumerWidget {
           sigunguCode: null,
         );
 
+        // 🔧 중요: dispose 체크
+        if (!isMounted()) return;
+
         // API가 이미 CongestionData? 객체를 반환하므로 fromJson() 불필요
         congestionData.value = congestionResult ?? _getDefaultCongestionData(recommendation);
         isLoadingCongestion.value = false;
@@ -48,6 +54,10 @@ class RecommendationInfoSections extends HookConsumerWidget {
         print('✅ 혼잡도 데이터 로드 완료: ${congestionData.value?.currentLevel}%');
       } catch (e) {
         print('❌ 혼잡도 데이터 로드 실패: $e');
+
+        // 🔧 중요: dispose 체크
+        if (!isMounted()) return;
+
         congestionData.value = _getDefaultCongestionData(recommendation);
         isLoadingCongestion.value = false;
       }
@@ -56,7 +66,9 @@ class RecommendationInfoSections extends HookConsumerWidget {
     // 🆕 초기 데이터 로드 (useEffect)
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        loadCongestionData();
+        if (isMounted()) {
+          loadCongestionData();
+        }
       });
       return null;
     }, []);

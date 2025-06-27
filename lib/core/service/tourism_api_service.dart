@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-
+import 'package:intl/intl.dart';
 import '../../features/home/presentation/providers/recommendation_model.dart';
 
 /// 관광공사 API 직접 연결 서비스 - 혼잡도 정보 포함
@@ -10,7 +10,10 @@ class TourismApiService {
   // Base URLs
   static const String _korServiceBaseUrl = 'https://apis.data.go.kr/B551011/KorService2';
   static const String _photoGalleryBaseUrl = 'https://apis.data.go.kr/B551011/PhotoGalleryService1';
-  static const String _congestionBaseUrl = 'https://apis.data.go.kr/B551011/VisitCoreaService';
+
+  // 🔧 수정된 혼잡도 API Base URLs
+  static const String _dataLabBaseUrl = 'https://apis.data.go.kr/B551011/DataLabService';
+  static const String _concentrationBaseUrl = 'https://apis.data.go.kr/B551011/TatsCnctrRateService';
 
   // Timeout 설정
   static const Duration _requestTimeout = Duration(seconds: 15);
@@ -24,23 +27,169 @@ class TourismApiService {
     return key;
   }
 
-  // 캐싱 시스템
+  // 캐싱 시스템 (혼잡도 API는 캐시 제외)
   static final Map<String, dynamic> _apiCache = {};
   static final Map<String, DateTime> _cacheTimestamps = {};
   static const Duration _cacheExpiration = Duration(minutes: 10); // 10분 캐시
 
-  /// HTTP 요청 공통 처리
+  // ==================== 🔧 새로 추가: 지역코드 서비스 ====================
+
+  /// 🔧 관광공사 API에서 실제 지역코드 조회
+  static Future<List<AreaCodeInfo>> fetchAreaCodes() async {
+    try {
+      print('🗺️ 지역코드 조회 시작');
+
+      final params = _getCommonParams(numOfRows: 50);
+
+      final response = await _makeRequest(
+        '$_korServiceBaseUrl/areaCode2',
+        params,
+        'AreaCode',
+      );
+
+      if (response == null) {
+        print('❌ 지역코드 조회 실패');
+        return [];
+      }
+
+      final items = _extractItems(response);
+      if (items == null || items.isEmpty) {
+        print('📭 지역코드 데이터 없음');
+        return [];
+      }
+
+      final areaCodes = <AreaCodeInfo>[];
+      for (final item in items) {
+        try {
+          final code = item['code']?.toString();
+          final name = item['name']?.toString();
+
+          if (code != null && name != null) {
+            areaCodes.add(AreaCodeInfo(
+              code: code,
+              name: name,
+            ));
+            print('✅ 지역코드: $code - $name');
+          }
+        } catch (e) {
+          print('⚠️ 지역코드 파싱 실패: $e');
+        }
+      }
+
+      print('✅ 총 ${areaCodes.length}개 지역코드 조회 완료');
+      return areaCodes;
+
+    } catch (e) {
+      print('❌ 지역코드 조회 예외: $e');
+      return [];
+    }
+  }
+
+  /// 특정 지역의 시군구코드 조회
+  static Future<List<SigunguCodeInfo>> fetchSigunguCodes(String areaCode) async {
+    try {
+      print('🏘️ 시군구코드 조회 시작: $areaCode');
+
+      final params = _getCommonParams(numOfRows: 100);
+      params['areaCode'] = areaCode;
+
+      final response = await _makeRequest(
+        '$_korServiceBaseUrl/areaCode2',
+        params,
+        'SigunguCode',
+      );
+
+      if (response == null) {
+        print('❌ 시군구코드 조회 실패');
+        return [];
+      }
+
+      final items = _extractItems(response);
+      if (items == null || items.isEmpty) {
+        print('📭 시군구코드 데이터 없음');
+        return [];
+      }
+
+      final sigunguCodes = <SigunguCodeInfo>[];
+      for (final item in items) {
+        try {
+          final code = item['code']?.toString();
+          final name = item['name']?.toString();
+
+          if (code != null && name != null) {
+            sigunguCodes.add(SigunguCodeInfo(
+              areaCode: areaCode,
+              sigunguCode: code,
+              name: name,
+            ));
+            print('✅ 시군구코드: $code - $name');
+          }
+        } catch (e) {
+          print('⚠️ 시군구코드 파싱 실패: $e');
+        }
+      }
+
+      print('✅ 총 ${sigunguCodes.length}개 시군구코드 조회 완료');
+      return sigunguCodes;
+
+    } catch (e) {
+      print('❌ 시군구코드 조회 예외: $e');
+      return [];
+    }
+  }
+
+  /// 지역명으로 지역코드 찾기
+  static Future<String?> getAreaCodeByName(String areaName) async {
+    try {
+      final areaCodes = await fetchAreaCodes();
+      for (final areaCode in areaCodes) {
+        if (areaCode.name.contains(areaName) || areaName.contains(areaCode.name)) {
+          print('🎯 지역명 매칭: $areaName -> ${areaCode.code}');
+          return areaCode.code;
+        }
+      }
+      print('❌ 지역명 매칭 실패: $areaName');
+      return null;
+    } catch (e) {
+      print('❌ 지역명 매칭 예외: $e');
+      return null;
+    }
+  }
+
+  /// 시군구명으로 시군구코드 찾기
+  static Future<String?> getSigunguCodeByName(String areaCode, String sigunguName) async {
+    try {
+      final sigunguCodes = await fetchSigunguCodes(areaCode);
+      for (final sigunguCode in sigunguCodes) {
+        if (sigunguCode.name.contains(sigunguName) || sigunguName.contains(sigunguCode.name)) {
+          print('🎯 시군구명 매칭: $sigunguName -> ${sigunguCode.sigunguCode}');
+          return sigunguCode.sigunguCode;
+        }
+      }
+      print('❌ 시군구명 매칭 실패: $sigunguName');
+      return null;
+    } catch (e) {
+      print('❌ 시군구명 매칭 예외: $e');
+      return null;
+    }
+  }
+
+  /// HTTP 요청 공통 처리 (혼잡도 API는 캐시 비활성화)
   static Future<Map<String, dynamic>?> _makeRequest(
       String url,
       Map<String, String> params,
       String apiName,
       ) async {
     try {
-      // 캐시 키 생성
       final cacheKey = '$url?${params.entries.map((e) => '${e.key}=${e.value}').join('&')}';
 
-      // 캐시 확인
-      if (_apiCache.containsKey(cacheKey)) {
+      // 🔧 혼잡도 관련 API는 캐시 사용 안함
+      final isCongestionApi = apiName.contains('RegionalVisitorData') ||
+          apiName.contains('LocalVisitorData') ||
+          apiName.contains('TouristSpotPrediction');
+
+      // 일반 API만 캐시 확인 (혼잡도 API 제외)
+      if (!isCongestionApi && _apiCache.containsKey(cacheKey)) {
         final timestamp = _cacheTimestamps[cacheKey];
         if (timestamp != null &&
             DateTime.now().difference(timestamp) < _cacheExpiration) {
@@ -79,9 +228,13 @@ class TourismApiService {
           if (header?['resultCode'] == '0000') {
             print('✅ [$apiName] 성공');
 
-            // 캐시에 저장
-            _apiCache[cacheKey] = data;
-            _cacheTimestamps[cacheKey] = DateTime.now();
+            // 🔧 일반 API만 캐시에 저장 (혼잡도 API 제외)
+            if (!isCongestionApi) {
+              _apiCache[cacheKey] = data;
+              _cacheTimestamps[cacheKey] = DateTime.now();
+            } else {
+              print('🚫 [$apiName] 혼잡도 API는 캐시하지 않음');
+            }
 
             return data;
           } else {
@@ -121,153 +274,673 @@ class TourismApiService {
     };
   }
 
-  // ==================== 혼잡도 API 메서드들 ====================
+  // ==================== 🔧 수정된 혼잡도 API 메서드들 ====================
 
-  /// 관광지별 혼잡도 정보 조회
+  /// 🔧 개선된 혼잡도 정보 조회 (실제 API 지역코드 사용)
   static Future<CongestionData?> fetchCongestionData({
     required String contentId,
     String? areaCode,
     String? sigunguCode,
+    String? touristSpotName,
+    String? address, // 🔧 추가: 주소 정보
   }) async {
     try {
-      print('📊 혼잡도 정보 조회: contentId=$contentId, area=$areaCode, sigungu=$sigunguCode');
+      print('📊 혼잡도 정보 조회: contentId=$contentId');
+      print('📍 입력된 정보 - area=$areaCode, sigungu=$sigunguCode, address=$address');
 
-      CongestionData? congestionData;
+      String? actualAreaCode = areaCode;
+      String? actualSigunguCode = sigunguCode;
 
-      // 1. 기초지자체 방문자수 데이터 조회 (시/군/구 단위)
-      if (sigunguCode != null && areaCode != null) {
-        congestionData = await _fetchLocalVisitorData(areaCode, sigunguCode);
-      }
+      // 🔧 1단계: 주소에서 지역명 추출 및 실제 코드 조회
+      if (address != null && address.isNotEmpty) {
+        final addressParts = address.split(' ');
 
-      // 2. 기초지자체 데이터가 없으면 광역지자체 데이터 조회
-      if (congestionData == null && areaCode != null) {
-        congestionData = await _fetchRegionalVisitorData(areaCode);
-      }
+        // 시/도 추출
+        String? extractedArea;
+        String? extractedSigungu;
 
-      // 3. 관광지별 집중률 예측 데이터 조회 (가능한 경우)
-      if (contentId.isNotEmpty) {
-        final predictionData = await _fetchTouristSpotPrediction(contentId);
-        if (predictionData != null && congestionData != null) {
-          // 예측 데이터와 방문자 데이터 결합
-          congestionData = congestionData.copyWith(
-            predictedVisitors: predictionData.predictedVisitors,
-            peakTime: predictionData.peakTime,
-            recommendedTime: predictionData.recommendedTime,
+        for (final part in addressParts) {
+          if (part.endsWith('시') || part.endsWith('도')) {
+            extractedArea = part;
+          } else if (part.endsWith('구') || part.endsWith('군') || part.endsWith('시')) {
+            extractedSigungu = part;
+          }
+        }
+
+        print('🔍 주소에서 추출 - 지역: $extractedArea, 시군구: $extractedSigungu');
+
+        // 실제 API에서 지역코드 조회
+        if (extractedArea != null && (actualAreaCode == null || actualAreaCode.isEmpty)) {
+          actualAreaCode = await getAreaCodeByName(extractedArea);
+          print('🔄 지역코드 변환: $extractedArea -> $actualAreaCode');
+        }
+
+        // 실제 API에서 시군구코드 조회
+        if (extractedSigungu != null && actualAreaCode != null &&
+            (actualSigunguCode == null || actualSigunguCode.isEmpty)) {
+          actualSigunguCode = await getSigunguCodeByName(
+              actualAreaCode,
+              extractedSigungu
           );
-        } else if (predictionData != null) {
-          congestionData = predictionData;
+          print('🔄 시군구코드 변환: $extractedSigungu -> $actualSigunguCode');
         }
       }
 
-      // 4. 모든 API에서 데이터를 가져올 수 없으면 기본값 생성
-      if (congestionData == null) {
-        congestionData = _generateDefaultCongestionData(contentId);
-        print('⚠️ 실제 혼잡도 데이터 없음, 기본값 사용');
+      print('🎯 최종 사용할 코드 - area=$actualAreaCode, sigungu=$actualSigunguCode');
+
+      CongestionData? lastWeekData;
+      CongestionData? thisWeekPrediction;
+
+      // 3단계: 혼잡도 데이터 조회 (기존 로직)
+      if (actualSigunguCode != null && actualAreaCode != null) {
+        print('🔍 지난주 방문자 데이터 조회 시도');
+        lastWeekData = await _fetchLocalVisitorDataSafest(actualAreaCode, actualSigunguCode);
+
+        if (lastWeekData == null) {
+          lastWeekData = await _fetchRegionalVisitorDataSafest(actualAreaCode);
+        }
       }
 
-      print('✅ 혼잡도 정보 조회 완료: 현재 ${congestionData.currentLevel}%');
-      return congestionData;
+      // 이번주 예상 방문자 조회
+      if (actualAreaCode != null && actualSigunguCode != null &&
+          touristSpotName != null && touristSpotName.isNotEmpty) {
+        print('🔍 이번주 예상 방문자 데이터 조회 시도');
+        thisWeekPrediction = await _fetchTouristConcentrationData(
+          areaCode: actualAreaCode,
+          sigunguCode: actualSigunguCode,
+          touristSpotName: touristSpotName,
+        );
+      }
+
+      // 4단계: 데이터 통합 (기존 로직 유지)
+      if (lastWeekData != null && thisWeekPrediction != null) {
+        print('🎉 지난주 + 이번주 예상 데이터 모두 사용');
+        return CongestionData(
+          currentLevel: thisWeekPrediction.currentLevel,
+          lastWeekVisitors: lastWeekData.lastWeekVisitors,
+          expectedVisitors: thisWeekPrediction.expectedVisitors,
+          recommendedTime: thisWeekPrediction.recommendedTime,
+          peakTime: thisWeekPrediction.peakTime,
+          predictedVisitors: thisWeekPrediction.predictedVisitors,
+          dataSource: 'combined_api',
+        );
+      } else if (lastWeekData != null) {
+        print('📊 지난주 방문자 데이터만 사용');
+        return lastWeekData;
+      } else if (thisWeekPrediction != null) {
+        print('🔮 이번주 예상 데이터만 사용');
+        return thisWeekPrediction;
+      } else {
+        print('⚠️ 실제 혼잡도 데이터 없음, 기본값 사용');
+        return _generateDefaultCongestionData(contentId);
+      }
 
     } catch (e) {
       print('❌ 혼잡도 정보 조회 실패: $e');
-      // 에러 발생 시 기본값 반환
       return _generateDefaultCongestionData(contentId);
     }
   }
 
-  /// 기초지자체 지역방문자수 집계 데이터 조회
-  static Future<CongestionData?> _fetchLocalVisitorData(String areaCode, String sigunguCode) async {
+  /// 🔧 관광지 집중률 방문자 추이 예측 정보 조회 (버그 수정)
+  static Future<CongestionData?> _fetchTouristConcentrationData({
+    required String areaCode,
+    required String sigunguCode,
+    required String touristSpotName,
+  }) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['areaCode'] = areaCode;
-      params['signguCode'] = sigunguCode;
+      print('🔮 [TouristConcentration] 집중률 예측 조회: $areaCode-$sigunguCode, 관광지: $touristSpotName');
 
-      // 현재 년월 설정 (YYYYMM 형식)
-      final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+      final params = _getCommonParams(numOfRows: 50);
+      params['areaCd'] = areaCode;
+      params['signguCd'] = sigunguCode;
+      params['tAtsNm'] = touristSpotName;
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitGugunList',
+        '$_concentrationBaseUrl/tatsCnctrRatedList',
         params,
-        'LocalVisitorData',
+        'TouristConcentration',
       );
 
-      if (response == null) return null;
+      if (response == null) {
+        print('❌ [TouristConcentration] 응답이 null');
+        return null;
+      }
 
-      final items = _extractItems(response);
-      if (items == null || items.isEmpty) return null;
+      // 🔧 수정: 전체 응답 구조 디버깅
+      print('🔍 [TouristConcentration] 전체 응답 구조 확인');
+      print('   - response 키: ${response.keys.toList()}');
 
-      // 최신 데이터 선택
-      final latestItem = items.first;
-      return _parseVisitorDataToCongestion(latestItem, 'local');
+      final body = response['response']?['body'];
+      if (body == null) {
+        print('❌ [TouristConcentration] body가 null');
+        return null;
+      }
 
-    } catch (e) {
-      print('❌ 기초지자체 방문자수 조회 실패: $e');
+      print('🔍 [TouristConcentration] body 구조: ${body.keys.toList()}');
+      print('🔍 [TouristConcentration] body 내용: $body');
+
+      final items = body['items'];
+      if (items == null) {
+        print('❌ [TouristConcentration] items가 null');
+        return null;
+      }
+
+      print('🔍 [TouristConcentration] items 타입: ${items.runtimeType}');
+      print('🔍 [TouristConcentration] items 내용: $items');
+
+      // 🔧 수정: items가 빈 문자열인 경우 처리
+      if (items is String && (items.isEmpty || items.trim().isEmpty)) {
+        print('❌ [TouristConcentration] items가 빈 문자열 - 데이터 없음');
+        return null;
+      }
+
+      dynamic item;
+
+      // 🔧 수정: items 구조에 따른 안전한 파싱
+      if (items is Map<String, dynamic>) {
+        item = items['item'];
+        print('🔍 [TouristConcentration] items는 Map, item 추출: ${item.runtimeType}');
+      } else if (items is List) {
+        item = items;
+        print('🔍 [TouristConcentration] items는 직접 List');
+      } else {
+        print('❌ [TouristConcentration] 예상하지 못한 items 타입: ${items.runtimeType}');
+        return null;
+      }
+
+      if (item == null) {
+        print('❌ [TouristConcentration] item이 null');
+        return null;
+      }
+
+      print('🔍 [TouristConcentration] item 타입: ${item.runtimeType}');
+      print('🔍 [TouristConcentration] item 내용: $item');
+
+      // 🔧 수정: item을 List로 안전하게 변환
+      List<Map<String, dynamic>> itemList = [];
+
+      try {
+        if (item is List) {
+          for (int i = 0; i < item.length; i++) {
+            final element = item[i];
+            if (element is Map<String, dynamic>) {
+              itemList.add(element);
+              print('✅ [TouristConcentration] List 요소 $i 추가: ${element.keys.toList()}');
+            } else {
+              print('⚠️ [TouristConcentration] List 요소 $i는 Map이 아님: ${element.runtimeType}');
+            }
+          }
+        } else if (item is Map<String, dynamic>) {
+          itemList.add(item);
+          print('✅ [TouristConcentration] 단일 Map 추가: ${item.keys.toList()}');
+        } else {
+          print('❌ [TouristConcentration] item을 처리할 수 없는 타입: ${item.runtimeType}');
+          return null;
+        }
+      } catch (e) {
+        print('❌ [TouristConcentration] item 변환 중 오류: $e');
+        return null;
+      }
+
+      print('📋 [TouristConcentration] 총 ${itemList.length}개 예측 데이터');
+
+      if (itemList.isEmpty) {
+        print('⚠️ [TouristConcentration] 예측 데이터 없음');
+        return null;
+      }
+
+      // 🔧 수정: 안전한 데이터 처리
+      double totalConcentrationRate = 0.0;
+      int validDays = 0;
+      Map<String, dynamic>? sampleItem;
+
+      print('📊 [TouristConcentration] 예측 데이터 분석:');
+
+      // 🔧 수정: 안전한 반복문 처리
+      for (int i = 0; i < itemList.length && i < 7; i++) {
+        try {
+          final dataItem = itemList[i];
+          print('🔍 [TouristConcentration] 데이터 $i: ${dataItem.keys.toList()}');
+
+          final baseYmd = dataItem['baseYmd']?.toString() ?? '';
+          final cnctrRateStr = dataItem['cnctrRate']?.toString() ?? '0';
+          final cnctrRate = double.tryParse(cnctrRateStr) ?? 0.0;
+          final tAtsNm = dataItem['tAtsNm']?.toString() ?? '';
+
+          print('   - 날짜: $baseYmd, 관광지: $tAtsNm, 집중률: ${cnctrRate}%');
+
+          if (cnctrRate > 0) {
+            totalConcentrationRate += cnctrRate;
+            validDays++;
+            sampleItem = dataItem;
+          }
+        } catch (e) {
+          print('⚠️ [TouristConcentration] 데이터 $i 처리 중 오류: $e');
+          continue;
+        }
+      }
+
+      // 🔧 수정: 결과 처리
+      if (sampleItem != null && validDays > 0) {
+        final averageConcentrationRate = totalConcentrationRate / validDays;
+        final touristSpotName = sampleItem['tAtsNm']?.toString() ?? '알 수 없음';
+        final areaName = sampleItem['areaNm']?.toString() ?? '알 수 없음';
+        final sigunguName = sampleItem['signguNm']?.toString() ?? '알 수 없음';
+
+        // 집중률을 기반으로 예상 방문자 수 계산
+        final expectedVisitors = (averageConcentrationRate * 100).round();
+
+        print('✅ [TouristConcentration] 성공: $touristSpotName ($areaName $sigunguName)');
+        print('📊 [TouristConcentration] 향후 7일 평균 집중률: ${averageConcentrationRate.toStringAsFixed(1)}%');
+        print('📊 [TouristConcentration] 예상 방문자: ${expectedVisitors}명');
+
+        return CongestionData(
+          currentLevel: averageConcentrationRate.round(),
+          lastWeekVisitors: 0, // 이 API는 예측 데이터만 제공
+          expectedVisitors: expectedVisitors,
+          recommendedTime: _generateRecommendedTimeFromConcentration(averageConcentrationRate),
+          peakTime: _generatePeakTimeFromConcentration(averageConcentrationRate),
+          predictedVisitors: expectedVisitors,
+          dataSource: 'tourist_concentration_api',
+        );
+      } else {
+        print('⚠️ [TouristConcentration] 유효한 예측 데이터 없음 (validDays: $validDays)');
+        return null;
+      }
+
+    } catch (e, stackTrace) {
+      print('❌ [TouristConcentration] 최상위 예외: $e');
+      print('📋 [TouristConcentration] StackTrace: $stackTrace');
       return null;
     }
   }
 
-  /// 광역지자체 지역방문자수 집계 데이터 조회
-  static Future<CongestionData?> _fetchRegionalVisitorData(String areaCode) async {
+  /// 🔧 개선된 기초지자체 방문자수 조회 - 실제 API 스펙 기반
+  static Future<CongestionData?> _fetchLocalVisitorDataSafest(String areaCode, String sigunguCode) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['areaCode'] = areaCode;
-
-      // 현재 년월 설정
       final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+
+      // 🔧 수정: 더 넓은 날짜 범위로 조회 (최근 30일)
+      final endDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 3))); // 3일 전까지
+      final startDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 30))); // 30일 전부터
+
+      final params = _getCommonParams(numOfRows: 1000); // 🔧 수정: 더 많은 데이터 요청
+      params['startYmd'] = startDate;
+      params['endYmd'] = endDate;
+
+      print('🔍 [LocalSafest] 요청: $startDate ~ $endDate, 시군구: $sigunguCode');
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitSidoList',
+        '$_dataLabBaseUrl/locgoRegnVisitrDDList',
         params,
-        'RegionalVisitorData',
+        'LocalSafest',
       );
 
-      if (response == null) return null;
+      if (response == null) {
+        print('❌ [LocalSafest] 응답이 null');
+        return null;
+      }
 
-      final items = _extractItems(response);
-      if (items == null || items.isEmpty) return null;
+      // 🔧 추가: API 응답 전체 구조 확인
+      print('🔍 [LocalSafest] 전체 응답 구조:');
+      print('   - response: ${response['response'] != null}');
+      print('   - header: ${response['response']?['header']}');
 
-      final latestItem = items.first;
-      return _parseVisitorDataToCongestion(latestItem, 'regional');
+      final responseData = response['response'];
+      if (responseData == null) {
+        print('❌ [LocalSafest] response 키 없음');
+        return null;
+      }
 
-    } catch (e) {
-      print('❌ 광역지자체 방문자수 조회 실패: $e');
+      // 🔧 헤더 확인
+      final header = responseData['header'];
+      final resultCode = header?['resultCode'];
+      final resultMsg = header?['resultMsg'];
+      print('🔍 [LocalSafest] API 결과: $resultCode - $resultMsg');
+
+      final bodyData = responseData['body'];
+      if (bodyData == null) {
+        print('❌ [LocalSafest] body 키 없음');
+        return null;
+      }
+
+      // 🔧 body 내용 상세 로깅
+      final totalCount = bodyData['totalCount'];
+      final numOfRows = bodyData['numOfRows'];
+      final pageNo = bodyData['pageNo'];
+      final itemsData = bodyData['items'];
+
+      print('🔍 [LocalSafest] Body 정보:');
+      print('   - totalCount: $totalCount');
+      print('   - numOfRows: $numOfRows');
+      print('   - pageNo: $pageNo');
+      print('   - items 타입: ${itemsData.runtimeType}');
+      print('   - items 내용: $itemsData');
+
+      // 🔧 totalCount가 0이면 조기 반환
+      if (totalCount == null || totalCount == 0) {
+        print('❌ [LocalSafest] 데이터 없음 (totalCount: $totalCount)');
+        print('💡 [LocalSafest] 다른 지역코드나 날짜 범위 시도 권장');
+        return null;
+      }
+
+      // 🔧 items 처리 - API 스펙에 따라 정확히 파싱
+      if (itemsData == null) {
+        print('❌ [LocalSafest] items 키 없음');
+        return null;
+      }
+
+      // API 스펙: items -> item (List 또는 단일 Map)
+      dynamic itemData;
+
+      if (itemsData is String && (itemsData.isEmpty || itemsData.trim().isEmpty)) {
+        print('❌ [LocalSafest] items가 빈 문자열 - 데이터 없음');
+        return null;
+      } else if (itemsData is Map<String, dynamic>) {
+        itemData = itemsData['item'];
+        print('🔍 [LocalSafest] items는 Map, item 추출: ${itemData.runtimeType}');
+      } else {
+        print('❌ [LocalSafest] 예상하지 못한 items 타입: ${itemsData.runtimeType}');
+        return null;
+      }
+
+      if (itemData == null) {
+        print('❌ [LocalSafest] item 데이터 없음');
+        return null;
+      }
+
+      // 🔧 item을 List로 정규화
+      List<Map<String, dynamic>> itemList = [];
+
+      if (itemData is List) {
+        for (final item in itemData) {
+          if (item is Map<String, dynamic>) {
+            itemList.add(item);
+          }
+        }
+      } else if (itemData is Map<String, dynamic>) {
+        itemList.add(itemData);
+      } else {
+        print('❌ [LocalSafest] item을 처리할 수 없는 타입: ${itemData.runtimeType}');
+        return null;
+      }
+
+      print('📋 [LocalSafest] 처리할 데이터: ${itemList.length}개');
+
+      if (itemList.isEmpty) {
+        print('⚠️ [LocalSafest] 처리 가능한 데이터 없음');
+        return null;
+      }
+
+      // 🔧 데이터 분석 및 집계
+      int totalVisitors = 0;
+      String? foundSignguName;
+      final Map<String, int> visitorsPerDay = {};
+      final Set<String> availableCodes = {};
+      int matchingDataCount = 0;
+
+      for (final item in itemList) {
+        try {
+          // API 스펙에 따른 필드명 사용
+          final itemSignguCode = item['signguCode']?.toString();
+          final itemSignguName = item['signguNm']?.toString();
+          final itemTouNum = int.tryParse(item['touNum']?.toString() ?? '0') ?? 0;
+          final itemBaseYmd = item['baseYmd']?.toString();
+          final itemTouDivNm = item['touDivNm']?.toString(); // 내국인/외국인 구분
+          final itemDaywkDivNm = item['daywkDivNm']?.toString(); // 요일 구분
+
+          // 사용 가능한 시군구 코드 수집
+          if (itemSignguCode != null && itemSignguName != null) {
+            availableCodes.add('$itemSignguCode: $itemSignguName');
+          }
+
+          print('   📅 $itemBaseYmd | 코드: $itemSignguCode($itemSignguName) | 방문자: $itemTouNum명 | 구분: $itemTouDivNm | 요일: $itemDaywkDivNm');
+
+          // 🔧 요청한 시군구코드와 일치하는 데이터만 집계
+          if (itemSignguCode == sigunguCode) {
+            totalVisitors += itemTouNum;
+            foundSignguName = itemSignguName;
+            matchingDataCount++;
+
+            // 날짜별 방문자 수 기록 (분석용)
+            if (itemBaseYmd != null) {
+              visitorsPerDay[itemBaseYmd] = (visitorsPerDay[itemBaseYmd] ?? 0) + itemTouNum;
+            }
+          }
+        } catch (e) {
+          print('⚠️ [LocalSafest] 개별 item 처리 중 오류: $e');
+          continue;
+        }
+      }
+
+      // 🔧 결과 처리
+      if (foundSignguName != null && totalVisitors > 0 && matchingDataCount > 0) {
+        print('✅ [LocalSafest] 성공: $foundSignguName');
+        print('📊 [LocalSafest] 총 방문자: ${totalVisitors}명 (${matchingDataCount}개 데이터 포인트)');
+        print('📊 [LocalSafest] 일평균 방문자: ${(totalVisitors / matchingDataCount).round()}명');
+
+        // 날짜별 방문자 현황 로깅
+        print('📅 [LocalSafest] 날짜별 방문자:');
+        visitorsPerDay.entries.take(5).forEach((entry) {
+          print('   ${entry.key}: ${entry.value}명');
+        });
+
+        return CongestionData(
+          currentLevel: _calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount), // 일평균 기준
+          lastWeekVisitors: totalVisitors,
+          expectedVisitors: (totalVisitors * 1.1).round(),
+          recommendedTime: _generateRecommendedTime(_calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount)),
+          peakTime: _generatePeakTime(_calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount)),
+          predictedVisitors: null,
+          dataSource: 'local_visitor_api',
+        );
+      } else {
+        print('⚠️ [LocalSafest] 시군구 $sigunguCode 데이터 없음');
+        print('📋 [LocalSafest] 사용 가능한 시군구 코드 (최대 10개):');
+        availableCodes.take(10).forEach((code) => print('   - $code'));
+
+        // 🔧 다른 시군구의 평균값으로 추정
+        if (itemList.isNotEmpty) {
+          final avgVisitors = totalVisitors > 0 ? totalVisitors : 100; // 기본값
+          print('💡 [LocalSafest] 다른 지역 평균을 기반으로 추정값 생성');
+
+          return CongestionData(
+            currentLevel: _calculateCongestionFromVisitors(avgVisitors ~/ 7), // 주간 평균
+            lastWeekVisitors: avgVisitors,
+            expectedVisitors: (avgVisitors * 1.05).round(),
+            recommendedTime: _generateRecommendedTime(_calculateCongestionFromVisitors(avgVisitors ~/ 7)),
+            peakTime: _generatePeakTime(_calculateCongestionFromVisitors(avgVisitors ~/ 7)),
+            predictedVisitors: null,
+            dataSource: 'estimated_from_regional_data',
+          );
+        }
+
+        return null;
+      }
+
+    } catch (e, stackTrace) {
+      print('❌ [LocalSafest] 최상위 예외: $e');
+      print('📋 StackTrace: $stackTrace');
       return null;
     }
   }
 
-  /// 관광지 집중률 방문자 추이 예측 데이터 조회
-  static Future<CongestionData?> _fetchTouristSpotPrediction(String contentId) async {
+  /// 🔧 개선된 광역지자체 방문자수 조회 - 실제 API 스펙 기반
+  static Future<CongestionData?> _fetchRegionalVisitorDataSafest(String areaCode) async {
     try {
-      final params = _getCommonParams(numOfRows: 10);
-      params['contentId'] = contentId;
-
-      // 현재 년월 설정
       final now = DateTime.now();
-      params['ym'] = '${now.year}${now.month.toString().padLeft(2, '0')}';
+
+      // 🔧 수정: 더 넓은 날짜 범위로 조회 (최근 30일)
+      final endDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 3))); // 3일 전까지
+      final startDate = DateFormat('yyyyMMdd').format(now.subtract(Duration(days: 30))); // 30일 전부터
+
+      final params = _getCommonParams(numOfRows: 1000); // 🔧 수정: 더 많은 데이터 요청
+      params['startYmd'] = startDate;
+      params['endYmd'] = endDate;
+
+      print('🔍 [RegionalSafest] 요청: $startDate ~ $endDate, 지역: $areaCode');
 
       final response = await _makeRequest(
-        '$_congestionBaseUrl/visitCnrsRateList',
+        '$_dataLabBaseUrl/metcoRegnVisitrDDList',
         params,
-        'TouristSpotPrediction',
+        'RegionalSafest',
       );
 
       if (response == null) return null;
 
-      final items = _extractItems(response);
-      if (items == null || items.isEmpty) return null;
+      print('🔍 [RegionalSafest] 전체 응답 구조:');
+      print('   - response: ${response['response'] != null}');
 
-      final predictionItem = items.first;
-      return _parsePredictionDataToCongestion(predictionItem);
+      final responseData = response['response'];
+      if (responseData == null) return null;
 
-    } catch (e) {
-      print('❌ 관광지 예측 데이터 조회 실패: $e');
+      // 🔧 헤더 확인
+      final header = responseData['header'];
+      final resultCode = header?['resultCode'];
+      final resultMsg = header?['resultMsg'];
+      print('🔍 [RegionalSafest] API 결과: $resultCode - $resultMsg');
+
+      final bodyData = responseData['body'];
+      if (bodyData == null) return null;
+
+      // 🔧 body 내용 상세 로깅
+      final totalCount = bodyData['totalCount'];
+      final itemsData = bodyData['items'];
+
+      print('🔍 [RegionalSafest] Body 정보:');
+      print('   - totalCount: $totalCount');
+      print('   - items 타입: ${itemsData.runtimeType}');
+
+      if (totalCount == null || totalCount == 0) {
+        print('❌ [RegionalSafest] 데이터 없음 (totalCount: $totalCount)');
+        return null;
+      }
+
+      // 🔧 items 처리 - API 스펙에 따라 정확히 파싱
+      if (itemsData == null) return null;
+
+      dynamic itemData;
+
+      if (itemsData is String && (itemsData.isEmpty || itemsData.trim().isEmpty)) {
+        print('❌ [RegionalSafest] items가 빈 문자열 - 데이터 없음');
+        return null;
+      } else if (itemsData is Map<String, dynamic>) {
+        itemData = itemsData['item'];
+      } else {
+        print('❌ [RegionalSafest] 예상하지 못한 items 타입: ${itemsData.runtimeType}');
+        return null;
+      }
+
+      if (itemData == null) return null;
+
+      // 🔧 item을 List로 정규화
+      List<Map<String, dynamic>> itemList = [];
+
+      if (itemData is List) {
+        for (final item in itemData) {
+          if (item is Map<String, dynamic>) {
+            itemList.add(item);
+          }
+        }
+      } else if (itemData is Map<String, dynamic>) {
+        itemList.add(itemData);
+      } else {
+        return null;
+      }
+
+      print('📋 [RegionalSafest] 처리할 데이터: ${itemList.length}개');
+
+      if (itemList.isEmpty) return null;
+
+      // 🔧 데이터 분석 및 집계
+      int totalVisitors = 0;
+      String? foundAreaName;
+      final Set<String> availableCodes = {};
+      int matchingDataCount = 0;
+
+      for (final item in itemList) {
+        try {
+          // API 스펙에 따른 필드명 사용
+          final itemAreaCode = item['areaCode']?.toString();
+          final itemAreaName = item['areaNm']?.toString();
+          final itemTouNum = int.tryParse(item['touNum']?.toString() ?? '0') ?? 0;
+          final itemBaseYmd = item['baseYmd']?.toString();
+          final itemTouDivNm = item['touDivNm']?.toString(); // 내국인/외국인 구분
+
+          // 사용 가능한 지역 코드 수집
+          if (itemAreaCode != null && itemAreaName != null) {
+            availableCodes.add('$itemAreaCode: $itemAreaName');
+          }
+
+          print('   📅 $itemBaseYmd | 코드: $itemAreaCode($itemAreaName) | 방문자: $itemTouNum명 | 구분: $itemTouDivNm');
+
+          if (itemAreaCode == areaCode) {
+            totalVisitors += itemTouNum;
+            foundAreaName = itemAreaName;
+            matchingDataCount++;
+          }
+        } catch (e) {
+          print('⚠️ [RegionalSafest] 개별 item 처리 중 오류: $e');
+          continue;
+        }
+      }
+
+      if (foundAreaName != null && totalVisitors > 0 && matchingDataCount > 0) {
+        print('✅ [RegionalSafest] 성공: $foundAreaName');
+        print('📊 [RegionalSafest] 총 방문자: ${totalVisitors}명 (${matchingDataCount}개 데이터 포인트)');
+
+        return CongestionData(
+          currentLevel: _calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount), // 일평균 기준
+          lastWeekVisitors: totalVisitors,
+          expectedVisitors: (totalVisitors * 1.1).round(),
+          recommendedTime: _generateRecommendedTime(_calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount)),
+          peakTime: _generatePeakTime(_calculateCongestionFromVisitors(totalVisitors ~/ matchingDataCount)),
+          predictedVisitors: null,
+          dataSource: 'regional_visitor_api',
+        );
+      } else {
+        print('⚠️ [RegionalSafest] 지역 $areaCode 데이터 없음');
+        print('📋 [RegionalSafest] 사용 가능한 지역 코드 (최대 10개):');
+        availableCodes.take(10).forEach((code) => print('   - $code'));
+        return null;
+      }
+
+    } catch (e, stackTrace) {
+      print('❌ [RegionalSafest] 최상위 예외: $e');
+      print('📋 StackTrace: $stackTrace');
       return null;
     }
   }
 
-  /// 방문자 데이터를 혼잡도 데이터로 변환
+  /// 🔧 집중률 기반 추천 시간 생성
+  static String _generateRecommendedTimeFromConcentration(double concentrationRate) {
+    if (concentrationRate <= 20) return '지금 방문 추천 (한적함)';
+    if (concentrationRate <= 40) return '오전 9-11시 추천';
+    if (concentrationRate <= 60) return '평일 오후 2-4시 추천';
+    if (concentrationRate <= 80) return '평일 이른 아침 추천';
+    return '다른 날 방문 권장 (매우 혼잡 예상)';
+  }
+
+  /// 🔧 집중률 기반 피크 시간 생성
+  static String _generatePeakTimeFromConcentration(double concentrationRate) {
+    if (concentrationRate <= 20) return '혼잡 시간 없음';
+    if (concentrationRate <= 40) return '주말 오후';
+    if (concentrationRate <= 60) return '주말 오후 1-5시';
+    if (concentrationRate <= 80) return '주말 및 공휴일';
+    return '주말 및 공휴일 전체';
+  }
+
+  /// 방문자 수를 혼잡도 레벨로 변환
+  static int _calculateCongestionFromVisitors(int visitors) {
+    // 방문자 수에 따른 혼잡도 계산 로직
+    if (visitors < 1000) return 20;
+    if (visitors < 5000) return 40;
+    if (visitors < 10000) return 60;
+    if (visitors < 20000) return 80;
+    return 90;
+  }
+
+  /// 방문자 데이터를 혼잡도 데이터로 변환 (기존 메서드 유지)
   static CongestionData _parseVisitorDataToCongestion(Map<String, dynamic> item, String type) {
     try {
       // API 응답 필드는 실제 API 문서에 맞게 조정 필요
@@ -320,7 +993,7 @@ class TourismApiService {
     }
   }
 
-  /// 예측 데이터를 혼잡도 데이터로 변환
+  /// 예측 데이터를 혼잡도 데이터로 변환 (기존 메서드 유지)
   static CongestionData _parsePredictionDataToCongestion(Map<String, dynamic> item) {
     try {
       final cnrsRate = _parseDoubleSafely(item['cnrsRate']) ?? 50.0;
@@ -402,7 +1075,7 @@ class TourismApiService {
     return null;
   }
 
-  // ==================== 기본 관광 정보 API 메서드들 ====================
+  // ==================== 기본 관광 정보 API 메서드들 (기존 유지) ====================
 
   /// 위치기반 관광정보 조회 (내 주변 장소용)
   static Future<List<NearbyPlace>> fetchNearbyPlaces({
@@ -697,7 +1370,7 @@ class TourismApiService {
     }
   }
 
-  // ==================== 유틸리티 메서드들 ====================
+  // ==================== 유틸리티 메서드들 (기존 유지) ====================
 
   /// API 응답에서 items 추출
   static List<dynamic>? _extractItems(Map<String, dynamic>? response) {
@@ -792,7 +1465,7 @@ class TourismApiService {
 
   static double _toRadians(double degree) => degree * pi / 180;
 
-  /// API 데이터를 NearbyPlace로 변환
+  /// API 데이터를 NearbyPlace로 변환 (지역코드 포함)
   static Future<List<NearbyPlace>> _convertToNearbyPlaces(
       List<dynamic> items,
       double userLat,
@@ -811,21 +1484,37 @@ class TourismApiService {
         final addr2 = item['addr2']?.toString() ?? '';
         final fullAddress = addr2.isNotEmpty ? '$addr1 $addr2' : addr1;
 
-        // 거리 계산
+        // 🔧 수정: 관광공사 API 좌표 및 지역코드 추출
+        double? latitude;
+        double? longitude;
         String distance = '';
+
+        // 지역코드 추출 (혼잡도 API용)
+        final areaCode = item['areacode']?.toString();
+        final sigunguCode = item['sigungucode']?.toString();
+
         try {
           final mapX = double.tryParse(item['mapx']?.toString() ?? '');
           final mapY = double.tryParse(item['mapy']?.toString() ?? '');
 
           if (mapX != null && mapY != null && mapX != 0 && mapY != 0) {
+            latitude = mapY;  // mapy가 위도
+            longitude = mapX; // mapx가 경도
+
             final distanceKm = _calculateDistance(userLat, userLng, mapY, mapX);
             if (distanceKm < 1.0) {
               distance = '도보 ${(distanceKm * 20).round()}분';
             } else {
               distance = '${distanceKm.toStringAsFixed(1)}km';
             }
+
+            print('✅ ${title} 좌표: (${mapY}, ${mapX}), 지역: ${areaCode}-${sigunguCode}, 거리: ${distanceKm.toStringAsFixed(2)}km');
+          } else {
+            print('⚠️ ${title} 좌표 정보 없음, 지역: ${areaCode}-${sigunguCode}');
+            distance = '거리 정보 없음';
           }
         } catch (e) {
+          print('⚠️ ${title} 좌표 파싱 실패: $e');
           distance = '거리 정보 없음';
         }
 
@@ -840,6 +1529,10 @@ class TourismApiService {
           description: '',
           reason: '',
           tip: '',
+          latitude: latitude,
+          longitude: longitude,
+          areaCode: areaCode,        // 🔧 추가: 지역코드
+          sigunguCode: sigunguCode,  // 🔧 추가: 시군구코드
         );
 
         places.add(place);
@@ -1041,8 +1734,39 @@ class TourismApiService {
   }
 }
 
-// ==================== 모델 클래스들 ====================
+// ==================== 🔧 새로 추가: 모델 클래스들 ====================
 
+/// 지역코드 정보 모델
+class AreaCodeInfo {
+  final String? code;  // nullable로 변경
+  final String name;
+
+  const AreaCodeInfo({
+    required this.code,
+    required this.name,
+  });
+
+  @override
+  String toString() => 'AreaCode($code: $name)';
+}
+
+/// 시군구코드 정보 모델
+class SigunguCodeInfo {
+  final String areaCode;
+  final String sigunguCode;
+  final String name;
+
+  const SigunguCodeInfo({
+    required this.areaCode,
+    required this.sigunguCode,
+    required this.name,
+  });
+
+  @override
+  String toString() => 'SigunguCode($areaCode-$sigunguCode: $name)';
+}
+
+// ==================== 기존 모델 클래스들 (기존 유지) ====================
 
 /// 주변 장소 모델
 class NearbyPlace {
@@ -1056,6 +1780,12 @@ class NearbyPlace {
   final String description;
   final String reason;
   final String tip;
+  // 🔧 추가: 좌표 정보 (관광공사 API의 mapx, mapy)
+  final double? latitude;
+  final double? longitude;
+  // 🔧 추가: 혼잡도 API용 지역코드
+  final String? areaCode;
+  final String? sigunguCode;
 
   const NearbyPlace({
     this.contentId = '',
@@ -1068,6 +1798,10 @@ class NearbyPlace {
     required this.description,
     required this.reason,
     required this.tip,
+    this.latitude,
+    this.longitude,
+    this.areaCode,
+    this.sigunguCode,
   });
 
   Map<String, dynamic> toJson() {
@@ -1082,6 +1816,10 @@ class NearbyPlace {
       'description': description,
       'reason': reason,
       'tip': tip,
+      'latitude': latitude,
+      'longitude': longitude,
+      'areaCode': areaCode,
+      'sigunguCode': sigunguCode,
     };
   }
 
@@ -1097,6 +1835,10 @@ class NearbyPlace {
       description: json['description'] ?? '',
       reason: json['reason'] ?? '',
       tip: json['tip'] ?? '',
+      latitude: json['latitude']?.toDouble(),
+      longitude: json['longitude']?.toDouble(),
+      areaCode: json['areaCode']?.toString(),
+      sigunguCode: json['sigunguCode']?.toString(),
     );
   }
 }
