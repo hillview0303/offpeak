@@ -90,12 +90,11 @@
 </p>
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da" width="25%" />
-  <img src="screenshots/chatbot.png" width="25%" />
-  <img src="screenshots/transportation.png" width="25%" />
-  <img src="screenshots/detail.png" width="25%" />
+  <img src="https://github.com/user-attachments/assets/fa20c5d3-1acd-4bba-aa18-50fabd9e13fc" width="25%" />
+  <img src="https://github.com/user-attachments/assets/db39f6f1-217c-4d4a-96b4-5393df08fa0b" width="25%" />
+  <img src="https://github.com/user-attachments/assets/32419bd8-4514-48c7-af21-7699380dd0b0" width="25%" />
+  <img src="https://github.com/user-attachments/assets/3e8a2523-1ac4-4dab-9d25-588dc9267c40" width="25%" />
 </div>
-
 
 ---
 
