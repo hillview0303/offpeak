@@ -89,26 +89,12 @@
   <b>메인 화면 | AI 챗봇 | 교통편별 추천 | 상세 정보</b>
 </p>
 
-<table align="center">
-  <tr>
-    <td align="center">
-      <img src="https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da" width="200"/><br/>
-      KakaoTalk
-    </td>
-    <td align="center">
-      <img src="screenshots/chatbot.png" width="200"/><br/>
-      챗봇
-    </td>
-    <td align="center">
-      <img src="screenshots/transportation.png" width="200"/><br/>
-      교통편
-    </td>
-    <td align="center">
-      <img src="screenshots/detail.png" width="200"/><br/>
-      상세 정보
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/76758e88-87c0-49cb-88ef-aaf0106446da" width="25%" />
+  <img src="screenshots/chatbot.png" width="25%" />
+  <img src="screenshots/transportation.png" width="25%" />
+  <img src="screenshots/detail.png" width="25%" />
+</div>
 
 
 ---
