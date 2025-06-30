@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import '../../../../core/constants/color.dart';
+import '../../../../core/constants/size.dart';
+import '../../../../core/constants/style.dart';
 
 // 알림 설정 상태 관리를 위한 Provider
 final notificationProvider = StateNotifierProvider<NotificationNotifier, bool>((ref) {
@@ -8,22 +11,16 @@ final notificationProvider = StateNotifierProvider<NotificationNotifier, bool>((
 });
 
 class NotificationNotifier extends StateNotifier<bool> {
-  NotificationNotifier() : super(true); // 기본값 true
-
-  void toggle() {
-    state = !state;
-  }
-
-  void updateNotification(bool value) {
-    state = value;
-  }
+  NotificationNotifier() : super(true);
+  void toggle() => state = !state;
+  void updateNotification(bool value) => state = value;
 }
 
 // 사용자 정보 Provider (예시)
 final userProfileProvider = Provider<Map<String, String>>((ref) {
   return {
     'name': '김민수',
-    'email': 'minsu@example.com',
+    'email': 'minsu@gmail.com',
     'phone': '010-1234-5678',
     'location': '부산, 대한민국',
   };
@@ -34,43 +31,29 @@ class MyPage extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Hooks
     final currentPasswordController = useTextEditingController();
     final newPasswordController = useTextEditingController();
     final confirmPasswordController = useTextEditingController();
     final deletePasswordController = useTextEditingController();
-
-    // Providers
     final notificationEnabled = ref.watch(notificationProvider);
     final profile = ref.watch(userProfileProvider);
 
-    // 컨트롤러 dispose는 자동으로 처리됨
-    useEffect(() {
-      return () {
-        // cleanup은 Hook이 자동으로 처리
-      };
-    }, []);
-
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           '마이페이지',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+          style: AppTextStyles.appBarTitle,
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
-        shadowColor: Colors.black12,
+        shadowColor: AppColors.shadowLight,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildProfileSection(profile),
-            const SizedBox(height: 24),
+            SizedBox(height: AppSizes.gapL),
             _buildMenuSections(
               context,
               ref,
@@ -82,7 +65,7 @@ class MyPage extends HookConsumerWidget {
             ),
             _buildLogoutButton(context),
             _buildAppInfo(),
-            const SizedBox(height: 32),
+            SizedBox(height: AppSizes.gapXL),
           ],
         ),
       ),
@@ -91,20 +74,20 @@ class MyPage extends HookConsumerWidget {
 
   Widget _buildProfileSection(Map<String, String> profile) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      margin: EdgeInsets.fromLTRB(AppSizes.gapM, AppSizes.gapM, AppSizes.gapM, 0),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: AppColors.shadow,
             blurRadius: 10,
             offset: const Offset(0, 2),
-          ),
+          )
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(AppSizes.gapL),
         child: Row(
           children: [
             Container(
@@ -112,53 +95,43 @@ class MyPage extends HookConsumerWidget {
               height: 80,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [Color(0xFF3B82F6), Color(0xFF8B5CF6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                gradient: AppColors.primaryGradient,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.person,
-                size: 40,
-                color: Colors.white,
+                size: AppSizes.iconXL,
+                color: AppColors.white,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: AppSizes.gapM),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     profile['name']!,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
+                    style: AppTextStyles.h4,
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: AppSizes.gapXS),
                   Text(
                     profile['email']!,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: AppSizes.gapS),
                   Row(
                     children: [
                       Icon(
                         Icons.location_on,
-                        size: 16,
-                        color: Colors.grey[500],
+                        size: AppSizes.iconS,
+                        color: AppColors.textHint,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: AppSizes.gapXS),
                       Text(
                         profile['location']!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textHint,
                         ),
                       ),
                     ],
@@ -188,20 +161,12 @@ class MyPage extends HookConsumerWidget {
           {
             'icon': Icons.security,
             'title': '비밀번호 변경',
-            'onTap': () => _showPasswordChangeDialog(
-              context,
-              currentPasswordController,
-              newPasswordController,
-              confirmPasswordController,
-            ),
+            'onTap': () => _showPasswordChangeDialog(context, currentPasswordController, newPasswordController, confirmPasswordController),
           },
           {
             'icon': Icons.person_remove,
             'title': '회원탈퇴',
-            'onTap': () => _showDeleteAccountDialog(
-              context,
-              deletePasswordController,
-            ),
+            'onTap': () => _showDeleteAccountDialog(context, deletePasswordController),
           },
         ],
       },
@@ -215,10 +180,7 @@ class MyPage extends HookConsumerWidget {
             'toggleValue': notificationEnabled,
             'onToggle': (value) {
               ref.read(notificationProvider.notifier).updateNotification(value);
-              _showSnackBar(
-                context,
-                value ? '알림이 켜졌습니다' : '알림이 꺼졌습니다',
-              );
+              _showSnackBar(context, value ? '알림이 켜졌습니다' : '알림이 꺼졌습니다');
             },
           },
         ],
@@ -228,16 +190,16 @@ class MyPage extends HookConsumerWidget {
     return Column(
       children: sections.map((section) {
         return Container(
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          margin: EdgeInsets.fromLTRB(AppSizes.gapM, 0, AppSizes.gapM, AppSizes.gapM),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSizes.radiusL),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppColors.shadow,
                 blurRadius: 10,
                 offset: const Offset(0, 2),
-              ),
+              )
             ],
           ),
           child: Column(
@@ -245,31 +207,25 @@ class MyPage extends HookConsumerWidget {
             children: [
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                padding: EdgeInsets.fromLTRB(AppSizes.spacingM, AppSizes.gapM, AppSizes.spacingM, AppSizes.spacingS),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(AppSizes.radiusL),
+                    topRight: Radius.circular(AppSizes.radiusL),
                   ),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!),
-                  ),
+                  border: Border(bottom: BorderSide(color: AppColors.border)),
                 ),
                 child: Text(
                   section['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black54,
+                  style: AppTextStyles.labelBold.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
               ...((section['items'] as List).asMap().entries.map((entry) {
-                final index = entry.key;
                 final item = entry.value as Map<String, dynamic>;
-                final isLast = index == (section['items'] as List).length - 1;
-
+                final isLast = entry.key == (section['items'] as List).length - 1;
                 return _buildMenuItem(
                   icon: item['icon'] as IconData,
                   title: item['title'] as String,
@@ -299,53 +255,51 @@ class MyPage extends HookConsumerWidget {
     return InkWell(
       onTap: isToggle ? null : onTap,
       borderRadius: BorderRadius.vertical(
-        bottom: isLast ? const Radius.circular(16) : Radius.zero,
+        bottom: isLast ? Radius.circular(AppSizes.radiusL) : Radius.zero,
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSizes.spacingM,
+          vertical: AppSizes.gapM,
+        ),
         decoration: BoxDecoration(
-          border: isLast ? null : Border(
-            bottom: BorderSide(color: Colors.grey[100]!),
-          ),
+          border: isLast ? null : Border(bottom: BorderSide(color: AppColors.greyLight)),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(AppSizes.gapS),
               decoration: BoxDecoration(
-                color: const Color(0xFF3B82F6).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
               ),
               child: Icon(
                 icon,
-                size: 20,
-                color: const Color(0xFF3B82F6),
+                size: AppSizes.iconM,
+                color: AppColors.primary,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: AppSizes.spacingS),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  fontWeight: AppTextStyles.medium,
                 ),
               ),
             ),
-            if (isToggle) ...[
+            if (isToggle)
               Switch(
                 value: toggleValue,
                 onChanged: onToggle,
-                activeColor: const Color(0xFF3B82F6),
-              ),
-            ] else ...[
+                activeColor: AppColors.primary,
+              )
+            else
               Icon(
                 Icons.chevron_right,
-                color: Colors.grey[400],
-                size: 20,
+                color: AppColors.textHint,
+                size: AppSizes.iconM,
               ),
-            ],
           ],
         ),
       ),
@@ -354,31 +308,30 @@ class MyPage extends HookConsumerWidget {
 
   Widget _buildLogoutButton(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      margin: EdgeInsets.fromLTRB(AppSizes.gapM, AppSizes.gapS, AppSizes.gapM, AppSizes.gapL),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () => _showLogoutDialog(context),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red[50],
-            foregroundColor: Colors.red[600],
+            backgroundColor: AppColors.error.withOpacity(0.1),
+            foregroundColor: AppColors.error,
             elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: AppSizes.gapM),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.red[200]!),
+              borderRadius: BorderRadius.circular(AppSizes.radiusL),
+              side: BorderSide(color: AppColors.error.withOpacity(0.3)),
             ),
           ),
-          child: const Row(
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.logout, size: 20),
-              SizedBox(width: 8),
+              Icon(Icons.logout, size: AppSizes.iconM),
+              SizedBox(width: AppSizes.gapS),
               Text(
                 '로그아웃',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                style: AppTextStyles.buttonMedium.copyWith(
+                  color: AppColors.error,
                 ),
               ),
             ],
@@ -390,22 +343,27 @@ class MyPage extends HookConsumerWidget {
 
   Widget _buildAppInfo() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.gapM),
       child: Column(
         children: [
           Text(
             '앱 버전 1.0.0',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[400],
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textHint,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: AppSizes.gapXS),
           Text(
-            '© 2025 Your Company. All rights reserved.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[400],
+            '© 2025 Offpeak. All rights reserved.',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textHint,
+            ),
+          ),
+          SizedBox(height: AppSizes.gapXS),
+          Text(
+            '데이터 제공: 한국관광공사 TourAPI',
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textHint,
             ),
           ),
         ],
@@ -422,35 +380,68 @@ class MyPage extends HookConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('비밀번호 변경'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        backgroundColor: AppColors.surface,
+        title: Text(
+          '비밀번호 변경',
+          style: AppTextStyles.h4,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: currentPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: AppTextStyles.inputText,
+              decoration: InputDecoration(
                 labelText: '현재 비밀번호',
-                border: OutlineInputBorder(),
+                labelStyle: AppTextStyles.inputLabel,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.borderFocus),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSizes.gapM),
             TextField(
               controller: newPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: AppTextStyles.inputText,
+              decoration: InputDecoration(
                 labelText: '새 비밀번호',
-                border: OutlineInputBorder(),
+                labelStyle: AppTextStyles.inputLabel,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.borderFocus),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: AppSizes.gapM),
             TextField(
               controller: confirmPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: AppTextStyles.inputText,
+              decoration: InputDecoration(
                 labelText: '새 비밀번호 확인',
-                border: OutlineInputBorder(),
+                labelStyle: AppTextStyles.inputLabel,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.borderFocus),
+                ),
               ),
             ),
           ],
@@ -463,7 +454,12 @@ class MyPage extends HookConsumerWidget {
               confirmPasswordController.clear();
               Navigator.pop(context);
             },
-            child: const Text('취소'),
+            child: Text(
+              '취소',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -482,7 +478,12 @@ class MyPage extends HookConsumerWidget {
               Navigator.pop(context);
               _showSnackBar(context, '비밀번호가 변경되었습니다.');
             },
-            child: const Text('변경'),
+            child: Text(
+              '변경',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
           ),
         ],
       ),
@@ -496,39 +497,56 @@ class MyPage extends HookConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          '회원탈퇴',
-          style: TextStyle(color: Colors.red),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
         ),
-        content: const Column(
+        backgroundColor: AppColors.surface,
+        title: Text(
+          '회원탈퇴',
+          style: AppTextStyles.h4.copyWith(
+            color: AppColors.error,
+          ),
+        ),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('정말로 회원탈퇴를 하시겠습니까?'),
-            SizedBox(height: 8),
+            Text(
+              '정말로 회원탈퇴를 하시겠습니까?',
+              style: AppTextStyles.bodyMedium,
+            ),
+            SizedBox(height: AppSizes.gapS),
             Text(
               '⚠️ 주의사항:',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: AppTextStyles.labelBold,
             ),
-            SizedBox(height: 4),
-            Text('• 모든 데이터가 삭제됩니다'),
-            Text('• 삭제된 데이터는 복구할 수 없습니다'),
-            Text('• 동일한 이메일로 재가입이 가능합니다'),
+            SizedBox(height: AppSizes.gapXS),
+            Text('• 모든 데이터가 삭제됩니다', style: AppTextStyles.bodyMedium),
+            Text('• 삭제된 데이터는 복구할 수 없습니다', style: AppTextStyles.bodyMedium),
+            Text('• 동일한 이메일로 재가입이 가능합니다', style: AppTextStyles.bodyMedium),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: Text(
+              '취소',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _showFinalDeleteConfirmation(context, deletePasswordController);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('탈퇴하기'),
+            child: Text(
+              '탈퇴하기',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.error,
+              ),
+            ),
           ),
         ],
       ),
@@ -542,22 +560,39 @@ class MyPage extends HookConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        backgroundColor: AppColors.surface,
+        title: Text(
           '최종 확인',
-          style: TextStyle(color: Colors.red),
+          style: AppTextStyles.h4.copyWith(
+            color: AppColors.error,
+          ),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('회원탈퇴를 위해 비밀번호를 입력해주세요.'),
-            const SizedBox(height: 16),
+            Text(
+              '회원탈퇴를 위해 비밀번호를 입력해주세요.',
+              style: AppTextStyles.bodyMedium,
+            ),
+            SizedBox(height: AppSizes.gapM),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
+              style: AppTextStyles.inputText,
+              decoration: InputDecoration(
                 labelText: '비밀번호',
-                border: OutlineInputBorder(),
+                labelStyle: AppTextStyles.inputLabel,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  borderSide: BorderSide(color: AppColors.borderFocus),
+                ),
               ),
             ),
           ],
@@ -568,7 +603,12 @@ class MyPage extends HookConsumerWidget {
               passwordController.clear();
               Navigator.pop(context);
             },
-            child: const Text('취소'),
+            child: Text(
+              '취소',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -577,8 +617,12 @@ class MyPage extends HookConsumerWidget {
               Navigator.pop(context);
               _deleteAccount(context);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('탈퇴 완료'),
+            child: Text(
+              '탈퇴 완료',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.error,
+              ),
+            ),
           ),
         ],
       ),
@@ -589,21 +633,39 @@ class MyPage extends HookConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('로그아웃'),
-        content: const Text('정말 로그아웃 하시겠습니까?'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        backgroundColor: AppColors.surface,
+        title: Text(
+          '로그아웃',
+          style: AppTextStyles.h4,
+        ),
+        content: Text(
+          '정말 로그아웃 하시겠습니까?',
+          style: AppTextStyles.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: Text(
+              '취소',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _logout(context);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('로그아웃'),
+            child: Text(
+              '로그아웃',
+              style: AppTextStyles.buttonMedium.copyWith(
+                color: AppColors.error,
+              ),
+            ),
           ),
         ],
       ),
@@ -626,9 +688,17 @@ class MyPage extends HookConsumerWidget {
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(
+          message,
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.white,
+          ),
+        ),
+        backgroundColor: AppColors.textPrimary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+        ),
       ),
     );
   }
